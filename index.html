@@ -805,33 +805,39 @@
   </div>
 
   <!-- Шторка Настроек (Темы оформления) -->
+ <!-- Шторка Настроек (Темы + Ключ) -->
   <div class="bottom-sheet" id="settingsSheet">
     <div class="sheet-grabber"></div>
-    <div class="sheet-title">Тема оформления</div>
+    <div class="sheet-title">Настройки</div>
     
+    <div style="font-size: 12px; color: var(--hint); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Тема оформления</div>
     <div class="theme-grid">
-      <!-- Midnight -->
       <div class="theme-card active" data-set-theme="midnight">
         <div class="theme-preview" style="background: #0b0f19; border: 1px solid #388bfd;">🌌</div>
         <div class="theme-name">Сапфир</div>
       </div>
-      <!-- Aurora -->
       <div class="theme-card" data-set-theme="aurora">
         <div class="theme-preview" style="background: #0e091b; border: 1px solid #bf5af2;">🔮</div>
         <div class="theme-name">Aurora</div>
       </div>
-      <!-- Warm Sand -->
       <div class="theme-card" data-set-theme="warm">
         <div class="theme-preview" style="background: #f6f5f0; color: #2c2523; border: 1px solid #d9532f;">🕯️</div>
         <div class="theme-name">Песок</div>
       </div>
-      <!-- OLED Black -->
       <div class="theme-card" data-set-theme="oled">
         <div class="theme-preview" style="background: #000000; border: 1px solid #333;">🕶️</div>
         <div class="theme-name">OLED</div>
       </div>
     </div>
 
+    <!-- ПОЛЕ ДЛЯ КЛЮЧА GROQ -->
+    <div style="font-size: 12px; color: var(--hint); margin: 16px 0 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Голосовой ввод (Groq API Key)</div>
+    <input type="text" id="groqKeyInput" placeholder="Вставьте ключ gsk_..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="width: 100%; background: var(--bg); border: 1px solid var(--separator); padding: 12px 14px; border-radius: 12px; color: var(--text); font-size: 14px; outline: none; margin-bottom: 20px;">
+
+    <div class="sheet-actions">
+      <button class="btn-sheet-submit" id="btnCloseSettings">Закрыть</button>
+    </div>
+  </div>
     <div class="sheet-actions">
       <button class="btn-sheet-submit" id="btnCloseSettings">Закрыть</button>
     </div>
@@ -1513,6 +1519,13 @@
       document.getElementById('btnSettings').addEventListener('click', openSettings);
       document.getElementById('sheetBackdrop').addEventListener('click', closeAllSheets);
       document.getElementById('btnCloseSettings').addEventListener('click', closeAllSheets);
+      const keyInput = document.getElementById('groqKeyInput');
+      if (keyInput) {
+        keyInput.value = localStorage.getItem('groq_whisper_key') || '';
+        keyInput.addEventListener('input', () => {
+          localStorage.setItem('groq_whisper_key', keyInput.value.trim());
+        });
+      }
       document.getElementById('btnSheetSubmit').addEventListener('click', submitSheet);
       document.getElementById('sheetInput').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
