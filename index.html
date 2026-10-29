@@ -16,10 +16,9 @@
 
   <style>
     /* -------------------------------------------------------------------------
-       ДИЗАЙН-СИСТЕМА И ТЕМАТИЧЕСКИЕ ПАЛИТРЫ
+       ТЕМЫ ОФОРМЛЕНИЯ
        ------------------------------------------------------------------------- */
     :root {
-      /* По умолчанию: Midnight Сапфир */
       --bg: #0b0f19;
       --card-bg: rgba(22, 27, 39, 0.82);
       --text: #f0f6fc;
@@ -33,7 +32,6 @@
       --glow-2: rgba(137, 87, 229, 0.12);
     }
 
-    /* Тема: OLED Черный */
     body[data-theme="oled"] {
       --bg: #000000;
       --card-bg: #121214;
@@ -48,7 +46,6 @@
       --glow-2: transparent;
     }
 
-    /* Тема: Aurora (Фиолетовый нео-нуар) */
     body[data-theme="aurora"] {
       --bg: #0e091b;
       --card-bg: rgba(26, 18, 48, 0.75);
@@ -63,7 +60,6 @@
       --glow-2: rgba(0, 242, 254, 0.12);
     }
 
-    /* Тема: Теплый песок (Warm Minimal) */
     body[data-theme="warm"] {
       --bg: #f6f5f0;
       --card-bg: #ffffff;
@@ -105,7 +101,6 @@
       position: relative;
     }
 
-    /* Живое фоновое свечение (Ambient Glow) */
     .ambient-glow {
       position: fixed;
       inset: 0;
@@ -117,9 +112,7 @@
       transition: all 0.5s ease;
     }
 
-    /* -------------------------------------------------------------------------
-       ШАПКА (iOS Large Title + Кнопка настроек)
-       ------------------------------------------------------------------------- */
+    /* ШАПКА */
     .header-area {
       margin-bottom: 16px;
       padding: 4px 4px 0;
@@ -143,8 +136,8 @@
     .btn-settings {
       background: var(--card-bg);
       border: 1px solid var(--separator);
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       color: var(--hint);
       display: flex;
@@ -153,7 +146,7 @@
       font-size: 16px;
       cursor: pointer;
       backdrop-filter: blur(10px);
-      transition: transform 0.15s ease, color 0.2s ease;
+      transition: transform 0.15s ease;
     }
 
     .btn-settings:active {
@@ -195,9 +188,7 @@
       background: var(--tint);
     }
 
-    /* -------------------------------------------------------------------------
-       ФИЛЬТР ТЕГОВ
-       ------------------------------------------------------------------------- */
+    /* ФИЛЬТР ТЕГОВ */
     .tags-bar {
       display: flex;
       gap: 6px;
@@ -229,12 +220,9 @@
       background: var(--tint);
       color: #ffffff;
       border-color: var(--tint);
-      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
     }
 
-    /* -------------------------------------------------------------------------
-       СЕКЦИИ И СПИСКИ С СВАЙПАМИ
-       ------------------------------------------------------------------------- */
+    /* СЕКЦИИ И СПИСКИ */
     .section-container {
       margin-bottom: 20px;
     }
@@ -360,6 +348,7 @@
     .task-content {
       flex: 1;
       min-width: 0;
+      cursor: pointer;
     }
 
     .task-title {
@@ -393,19 +382,9 @@
       gap: 3px;
     }
 
-    .meta-tag.urgent {
-      color: var(--danger);
-      font-weight: 600;
-    }
-
-    .meta-tag.overdue {
-      color: var(--danger);
-      font-weight: 600;
-    }
-
-    .meta-tag.category {
-      color: var(--tint);
-    }
+    .meta-tag.urgent { color: var(--danger); font-weight: 600; }
+    .meta-tag.overdue { color: var(--danger); font-weight: 600; }
+    .meta-tag.category { color: var(--tint); }
 
     .accordion-toggle {
       width: 100%;
@@ -440,13 +419,7 @@
       margin-bottom: 4px;
     }
 
-    .empty-state-desc {
-      font-size: 13px;
-    }
-
-    /* -------------------------------------------------------------------------
-       FLOATING MAGIC BUTTON (+)
-       ------------------------------------------------------------------------- */
+    /* FAB (+) */
     .fab-btn {
       position: fixed;
       right: 20px;
@@ -473,9 +446,7 @@
       transform: scale(0.9);
     }
 
-    /* -------------------------------------------------------------------------
-       МОДАЛЬНЫЕ ШТОРКИ (Bottom Sheets: Задача и Настройки)
-       ------------------------------------------------------------------------- */
+    /* МОДАЛЬНЫЕ ШТОРКИ */
     .sheet-backdrop {
       position: fixed;
       inset: 0;
@@ -526,23 +497,58 @@
       font-size: 18px;
       font-weight: 700;
       margin-bottom: 16px;
-      letter-spacing: -0.3px;
+    }
+
+    /* Строка ввода задачи с микрофоном */
+    .sheet-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
     }
 
     .sheet-input {
-      width: 100%;
+      flex: 1;
       border: none;
       outline: none;
       background: transparent;
       color: var(--text);
       font-size: 18px;
       font-weight: 500;
-      margin-bottom: 16px;
     }
 
     .sheet-input::placeholder {
       color: var(--hint);
       font-weight: 400;
+    }
+
+    .btn-voice {
+      background: var(--card-bg);
+      border: 1px solid var(--separator);
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .btn-voice:active { transform: scale(0.92); }
+
+    .btn-voice.recording {
+      background: var(--danger);
+      border-color: var(--danger);
+      animation: pulseMic 1.2s infinite;
+    }
+
+    @keyframes pulseMic {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.6); }
+      70% { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(255, 69, 58, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 69, 58, 0); }
     }
 
     .sheet-options-row {
@@ -596,75 +602,9 @@
       transition: transform 0.15s ease;
     }
 
-    .btn-sheet-submit:active {
-      transform: scale(0.95);
-    }
-/* Микрофон и поле для ключа */
-    .sheet-input-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
+    .btn-sheet-submit:active { transform: scale(0.95); }
 
-    .sheet-input-row .sheet-input {
-      margin-bottom: 0;
-    }
-
-    .btn-voice {
-      background: var(--card-bg);
-      border: 1px solid var(--separator);
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      font-size: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: all 0.2s ease;
-    }
-
-    .btn-voice:active {
-      transform: scale(0.92);
-    }
-
-    .btn-voice.recording {
-      background: var(--danger);
-      border-color: var(--danger);
-      animation: pulseMic 1.2s infinite;
-    }
-
-    @keyframes pulseMic {
-      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.6); }
-      70% { transform: scale(1.08); box-shadow: 0 0 0 12px rgba(255, 69, 58, 0); }
-      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 69, 58, 0); }
-    }
-
-    .settings-sub {
-      font-size: 13px;
-      color: var(--hint);
-      margin-bottom: 8px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-    }
-
-    .settings-key-input {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--separator);
-      padding: 10px 14px;
-      border-radius: 12px;
-      color: var(--text);
-      font-size: 14px;
-      outline: none;
-      margin-bottom: 18px;
-    }
-    /* -------------------------------------------------------------------------
-       СЕТКА ВЫБОРА ТЕМЫ В НАСТРОЙКАХ
-       ------------------------------------------------------------------------- */
+    /* СЕТКА ТЕМ */
     .theme-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -686,7 +626,6 @@
 
     .theme-card.active {
       border-color: var(--tint);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     }
 
     .theme-preview {
@@ -703,59 +642,16 @@
       font-weight: 600;
       text-align: center;
     }
-  /* Голосовой ввод в шторке */
-    .sheet-input-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-
-    .sheet-input-row .sheet-input {
-      margin-bottom: 0;
-    }
-
-    .btn-voice {
-      background: var(--card-bg);
-      border: 1px solid var(--separator);
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: all 0.2s ease;
-    }
-
-    .btn-voice:active {
-      transform: scale(0.92);
-    }
-
-    .btn-voice.recording {
-      background: var(--danger);
-      border-color: var(--danger);
-      animation: pulseRecord 1.2s infinite;
-    }
-
-    @keyframes pulseRecord {
-      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.5); }
-      70% { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(255, 69, 58, 0); }
-      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 69, 58, 0); }
-    }
   </style>
 </head>
 <body data-theme="midnight">
 
-  <!-- Фоновый атмосферный свет -->
   <div class="ambient-glow"></div>
 
   <!-- Шапка -->
   <div class="header-area">
     <div class="header-top-line">
-      <div class="header-date" id="headerDate">ЧЕТВЕРГ, 29 ОКТЯБРЯ</div>
+      <div class="header-date" id="headerDate">СЕГОДНЯ</div>
       <button class="btn-settings" id="btnSettings" aria-label="Настройки">⚙️</button>
     </div>
     <div class="header-row">
@@ -767,28 +663,20 @@
     </div>
   </div>
 
-  <!-- Фильтр по тегам -->
   <div class="tags-bar" id="tagsBar"></div>
-
-  <!-- Контейнер для секций -->
   <div id="sectionsContainer"></div>
-
-  <!-- Аккордеон выполненных дел -->
   <div id="doneAccordionContainer"></div>
 
-  <!-- Floating Magic Button (+) -->
+  <!-- Кнопка (+) -->
   <button class="fab-btn" id="fabBtn" aria-label="Создать задачу">+</button>
 
-  <!-- Шторка создания задачи -->
+  <!-- ШТОРКА ЗАДАЧИ -->
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
   <div class="bottom-sheet" id="bottomSheet">
     <div class="sheet-grabber"></div>
     <div class="sheet-input-row">
-      <div class="sheet-input-row">
       <input type="text" id="sheetInput" class="sheet-input" placeholder="Что сделать?" autocomplete="off">
-      <button class="btn-voice" id="btnVoice" type="button" aria-label="Записать голос">🎙️</button>
-    </div>
-      <button class="btn-voice" id="btnVoice" type="button" aria-label="Голосовой ввод">🎙️</button>
+      <button class="btn-voice" id="btnVoice" type="button" aria-label="Голос">🎙️</button>
     </div>
     
     <div class="sheet-options-row">
@@ -797,20 +685,17 @@
       <div class="option-pill" id="pillTag">🏷️ Тег</div>
     </div>
 
-    <div class="settings-sub">Голосовой ввод (Groq Whisper API)</div>
-    <input type="password" id="groqKeyInput" class="settings-key-input" placeholder="Вставьте ключ gsk_..." autocomplete="off">
     <div class="sheet-actions">
       <button class="btn-sheet-submit" id="btnSheetSubmit">Готово</button>
     </div>
   </div>
 
-  <!-- Шторка Настроек (Темы оформления) -->
- <!-- Шторка Настроек (Темы + Ключ) -->
+  <!-- ШТОРКА НАСТРОЕК (СТРОГО ЗДЕСЬ ПОЛЕ ДЛЯ КЛЮЧА) -->
   <div class="bottom-sheet" id="settingsSheet">
     <div class="sheet-grabber"></div>
     <div class="sheet-title">Настройки</div>
     
-    <div style="font-size: 12px; color: var(--hint); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Тема оформления</div>
+    <div style="font-size: 12px; color: var(--hint); margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">Тема оформления</div>
     <div class="theme-grid">
       <div class="theme-card active" data-set-theme="midnight">
         <div class="theme-preview" style="background: #0b0f19; border: 1px solid #388bfd;">🌌</div>
@@ -830,57 +715,39 @@
       </div>
     </div>
 
-    <!-- ПОЛЕ ДЛЯ КЛЮЧА GROQ -->
-    <div style="font-size: 12px; color: var(--hint); margin: 16px 0 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Голосовой ввод (Groq API Key)</div>
+    <div style="font-size: 12px; color: var(--hint); margin: 16px 0 8px; font-weight: 600; text-transform: uppercase;">Голосовой ввод (Groq Whisper API)</div>
     <input type="text" id="groqKeyInput" placeholder="Вставьте ключ gsk_..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="width: 100%; background: var(--bg); border: 1px solid var(--separator); padding: 12px 14px; border-radius: 12px; color: var(--text); font-size: 14px; outline: none; margin-bottom: 20px;">
 
     <div class="sheet-actions">
       <button class="btn-sheet-submit" id="btnCloseSettings">Закрыть</button>
     </div>
   </div>
-    <div class="sheet-actions">
-      <button class="btn-sheet-submit" id="btnCloseSettings">Закрыть</button>
-    </div>
-  </div>
 
   <script>
-    /* -------------------------------------------------------------------------
-       СОСТОЯНИЕ И НАСТРОЙКИ
-       ------------------------------------------------------------------------- */
-    const STORAGE_KEY = 'smart_tasks_things_v5';
+    /* СОСТОЯНИЕ */
+    const STORAGE_KEY = 'smart_tasks_apple_v6';
     const THEME_KEY = 'smart_tasks_theme_v1';
     let tasks = [];
     let currentTag = null;
     let isDoneExpanded = false;
     let currentTheme = localStorage.getItem(THEME_KEY) || 'midnight';
-    let editingTaskId = null; // null = создание, id = редактирование
+    let editingTaskId = null;
 
     let sheetState = { date: 'none', urgent: false, tag: 'none' };
     const TAG_EMOJIS = { 'работа': '💼', 'дом': '🏠', 'купить': '🛒', 'спорт': '🏋️', 'деньги': '💳' };
 
     const tg = window.Telegram?.WebApp;
 
-    /* -------------------------------------------------------------------------
-       ДВИЖОК ТЕМ
-       ------------------------------------------------------------------------- */
     function applyTheme(themeName) {
       currentTheme = themeName;
       document.body.setAttribute('data-theme', themeName);
       localStorage.setItem(THEME_KEY, themeName);
-
-      // Обновляем активный бейдж в шторке настроек
       document.querySelectorAll('.theme-card').forEach(card => {
-        if (card.dataset.setTheme === themeName) {
-          card.classList.add('active');
-        } else {
-          card.classList.remove('active');
-        }
+        card.classList.toggle('active', card.dataset.setTheme === themeName);
       });
     }
 
-    /* -------------------------------------------------------------------------
-       ПАРСИНГ ЗАДАЧИ
-       ------------------------------------------------------------------------- */
+    /* ПАРСИНГ */
     function parseTask(rawText, explicitDate, explicitUrgent, explicitTag) {
       if (!rawText || !rawText.trim()) return null;
 
@@ -923,9 +790,7 @@
             }
           }
         }
-      } catch (err) {
-        console.error('Ошибка в парсере:', err);
-      }
+      } catch (err) {}
 
       let cleanedTitle = text.replace(/\s+/g, ' ').trim();
       if (cleanedTitle.length > 0) {
@@ -943,21 +808,14 @@
       };
     }
 
-    /* -------------------------------------------------------------------------
-       ХРАНИЛИЩЕ
-       ------------------------------------------------------------------------- */
-    const isCloudSupported = Boolean(
-      tg?.isVersionAtLeast && tg.isVersionAtLeast('6.9') && tg.CloudStorage
-    );
+    /* ХРАНИЛИЩЕ */
+    const isCloudSupported = Boolean(tg?.isVersionAtLeast && tg.isVersionAtLeast('6.9') && tg.CloudStorage);
 
     function saveTasks() {
       const dataStr = JSON.stringify(tasks);
       localStorage.setItem(STORAGE_KEY, dataStr);
-
       if (isCloudSupported) {
-        tg.CloudStorage.setItem(STORAGE_KEY, dataStr, (err) => {
-          if (err) console.warn('CloudStorage error:', err);
-        });
+        tg.CloudStorage.setItem(STORAGE_KEY, dataStr, () => {});
       }
     }
 
@@ -980,14 +838,10 @@
       try {
         const local = localStorage.getItem(STORAGE_KEY);
         resolve(local ? JSON.parse(local) : []);
-      } catch (e) {
-        resolve([]);
-      }
+      } catch (e) { resolve([]); }
     }
 
-    /* -------------------------------------------------------------------------
-       ДЕЙСТВИЯ
-       ------------------------------------------------------------------------- */
+    /* ДЕЙСТВИЯ */
     function toggleTask(id) {
       const task = tasks.find(t => t.id === id);
       if (!task) return;
@@ -999,12 +853,7 @@
       if (task.completed) {
         tg?.HapticFeedback?.notificationOccurred('success');
         if (typeof confetti === 'function') {
-          confetti({
-            particleCount: 40,
-            spread: 60,
-            origin: { y: 0.75 },
-            colors: ['#388bfd', '#32d74b', '#bf5af2']
-          });
+          confetti({ particleCount: 40, spread: 60, origin: { y: 0.75 }, colors: ['#388bfd', '#32d74b', '#bf5af2'] });
         }
       } else {
         tg?.HapticFeedback?.impactOccurred('light');
@@ -1018,22 +867,15 @@
       tg?.HapticFeedback?.impactOccurred('medium');
     }
 
-    /* -------------------------------------------------------------------------
-       ШТОРКИ
-       ------------------------------------------------------------------------- */
+    /* ШТОРКИ */
     function openSheet() {
-      editingTaskId = null; // Сброс на создание новой задачи
-      const sheet = document.getElementById('bottomSheet');
-      const backdrop = document.getElementById('sheetBackdrop');
-      const input = document.getElementById('sheetInput');
-
+      editingTaskId = null;
       sheetState = { date: 'none', urgent: false, tag: 'none' };
       updateSheetPills();
-      input.value = '';
-
-      backdrop.classList.add('active');
-      sheet.classList.add('active');
-      setTimeout(() => input.focus(), 150);
+      document.getElementById('sheetInput').value = '';
+      document.getElementById('sheetBackdrop').classList.add('active');
+      document.getElementById('bottomSheet').classList.add('active');
+      setTimeout(() => document.getElementById('sheetInput').focus(), 150);
       tg?.HapticFeedback?.impactOccurred('medium');
     }
 
@@ -1041,15 +883,10 @@
       const task = tasks.find(t => t.id === id);
       if (!task) return;
 
-      editingTaskId = id; // Запоминаем, какую задачу редактируем
-      const sheet = document.getElementById('bottomSheet');
-      const backdrop = document.getElementById('sheetBackdrop');
-      const input = document.getElementById('sheetInput');
-
-      // Подставляем параметры задачи в кнопки
+      editingTaskId = id;
       sheetState.urgent = task.priority === 'high';
       sheetState.tag = (task.tags && task.tags.length > 0) ? task.tags[0] : 'none';
-      
+
       if (task.deadline) {
         const d = new Date(task.deadline);
         const now = new Date();
@@ -1063,11 +900,10 @@
       }
 
       updateSheetPills();
-      input.value = task.title;
-
-      backdrop.classList.add('active');
-      sheet.classList.add('active');
-      setTimeout(() => input.focus(), 150);
+      document.getElementById('sheetInput').value = task.title;
+      document.getElementById('sheetBackdrop').classList.add('active');
+      document.getElementById('bottomSheet').classList.add('active');
+      setTimeout(() => document.getElementById('sheetInput').focus(), 150);
       tg?.HapticFeedback?.impactOccurred('light');
     }
 
@@ -1086,16 +922,9 @@
 
     function updateSheetPills() {
       const pDate = document.getElementById('pillDate');
-      if (sheetState.date === 'today') {
-        pDate.textContent = '📅 Сегодня';
-        pDate.className = 'option-pill active';
-      } else if (sheetState.date === 'tomorrow') {
-        pDate.textContent = '📅 Завтра';
-        pDate.className = 'option-pill active';
-      } else {
-        pDate.textContent = '📅 Срок';
-        pDate.className = 'option-pill';
-      }
+      if (sheetState.date === 'today') { pDate.textContent = '📅 Сегодня'; pDate.className = 'option-pill active'; }
+      else if (sheetState.date === 'tomorrow') { pDate.textContent = '📅 Завтра'; pDate.className = 'option-pill active'; }
+      else { pDate.textContent = '📅 Срок'; pDate.className = 'option-pill'; }
 
       const pUrgent = document.getElementById('pillUrgent');
       pUrgent.className = sheetState.urgent ? 'option-pill active urgent' : 'option-pill';
@@ -1110,18 +939,14 @@
       }
     }
 
-   function submitSheet() {
+    function submitSheet() {
       const input = document.getElementById('sheetInput');
       const val = input.value;
-      if (!val || !val.trim()) {
-        closeAllSheets();
-        return;
-      }
+      if (!val || !val.trim()) { closeAllSheets(); return; }
 
       const parsed = parseTask(val, sheetState.date, sheetState.urgent, sheetState.tag);
       if (parsed) {
         if (editingTaskId) {
-          // Если редактировали — обновляем существующую задачу
           const idx = tasks.findIndex(t => t.id === editingTaskId);
           if (idx !== -1) {
             tasks[idx].title = parsed.title;
@@ -1131,39 +956,32 @@
           }
           editingTaskId = null;
         } else {
-          // Если создавали с нуля — добавляем вперед
           tasks.unshift(parsed);
         }
         saveTasks();
         render();
         tg?.HapticFeedback?.notificationOccurred('success');
       }
-
       closeAllSheets();
     }
+
     function formatMetaDate(isoString) {
       if (!isoString) return null;
       const d = new Date(isoString);
       const now = new Date();
       const isOverdue = d < now;
       const isToday = d.toDateString() === now.toDateString();
-
       const tomorrow = new Date();
       tomorrow.setDate(now.getDate() + 1);
       const isTomorrow = d.toDateString() === tomorrow.toDateString();
-
       const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
       if (isToday) return { text: `Сегодня, ${time}`, isOverdue };
       if (isTomorrow) return { text: `Завтра, ${time}`, isOverdue: false };
-      
-      const dayMonth = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-      return { text: `${dayMonth}, ${time}`, isOverdue };
+      return { text: `${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}, ${time}`, isOverdue };
     }
 
-    /* -------------------------------------------------------------------------
-       РЕНДЕР
-       ------------------------------------------------------------------------- */
+    /* РЕНДЕР */
     function render() {
       const now = new Date();
       document.getElementById('headerDate').textContent = 
@@ -1182,18 +1000,14 @@
         const allChip = document.createElement('div');
         allChip.className = `tag-chip ${currentTag === null ? 'active' : ''}`;
         allChip.textContent = 'Все';
-        allChip.onclick = () => { currentTag = null; render(); tg?.HapticFeedback?.impactOccurred('light'); };
+        allChip.onclick = () => { currentTag = null; render(); };
         tagsBar.appendChild(allChip);
 
         allTags.forEach(tag => {
           const chip = document.createElement('div');
           chip.className = `tag-chip ${currentTag === tag ? 'active' : ''}`;
           chip.textContent = `${TAG_EMOJIS[tag] || '🏷️'} #${tag}`;
-          chip.onclick = () => {
-            currentTag = currentTag === tag ? null : tag;
-            render();
-            tg?.HapticFeedback?.impactOccurred('light');
-          };
+          chip.onclick = () => { currentTag = currentTag === tag ? null : tag; render(); };
           tagsBar.appendChild(chip);
         });
       }
@@ -1207,9 +1021,8 @@
       const endOfToday = startOfToday + 86400000 - 1;
 
       visibleActive.forEach(task => {
-        if (!task.deadline) {
-          noDateGroup.push(task);
-        } else {
+        if (!task.deadline) noDateGroup.push(task);
+        else {
           const dTime = new Date(task.deadline).getTime();
           if (dTime <= endOfToday) todayGroup.push(task);
           else upcomingGroup.push(task);
@@ -1243,24 +1056,15 @@
       if (doneTasks.length > 0) {
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'accordion-toggle';
-        toggleBtn.innerHTML = `
-          <span>Выполнено (${doneTasks.length})</span>
-          <span>${isDoneExpanded ? '▲' : '▼'}</span>
-        `;
-        toggleBtn.onclick = () => {
-          isDoneExpanded = !isDoneExpanded;
-          render();
-          tg?.HapticFeedback?.impactOccurred('light');
-        };
+        toggleBtn.innerHTML = `<span>Выполнено (${doneTasks.length})</span><span>${isDoneExpanded ? '▲' : '▼'}</span>`;
+        toggleBtn.onclick = () => { isDoneExpanded = !isDoneExpanded; render(); };
         accContainer.appendChild(toggleBtn);
 
-        if (isDoneExpanded) {
-          renderSection(accContainer, null, doneTasks, null, true);
-        }
+        if (isDoneExpanded) renderSection(accContainer, null, doneTasks, null, true);
       }
     }
 
-    function renderSection(parentEl, title, taskList, accentColor, isCompletedGroup = false) {
+    function renderSection(parentEl, title, taskList, accentColor) {
       const section = document.createElement('div');
       section.className = 'section-container';
 
@@ -1299,7 +1103,6 @@
 
         const content = document.createElement('div');
         content.className = 'task-content';
-        content.style.cursor = 'pointer';
         content.onclick = () => openEditSheet(task.id);
 
         const titleEl = document.createElement('div');
@@ -1369,13 +1172,8 @@
             currentDiffX = diffX;
             if (Math.abs(currentDiffX) < 140) {
               row.style.transform = `translateX(${currentDiffX}px)`;
-              if (currentDiffX > 20) {
-                bgRight.style.opacity = '1';
-                bgLeft.style.opacity = '0';
-              } else if (currentDiffX < -20) {
-                bgLeft.style.opacity = '1';
-                bgRight.style.opacity = '0';
-              }
+              if (currentDiffX > 20) { bgRight.style.opacity = '1'; bgLeft.style.opacity = '0'; }
+              else if (currentDiffX < -20) { bgLeft.style.opacity = '1'; bgRight.style.opacity = '0'; }
             }
           }
         }, { passive: true });
@@ -1400,9 +1198,7 @@
       parentEl.appendChild(section);
     }
 
-    /* -------------------------------------------------------------------------
-       ИНИЦИАЛИЗАЦИЯ
-       ------------------------------------------------------------------------- */
+    /* ИНИЦИАЛИЗАЦИЯ И МИКРОФОН */
     document.addEventListener('DOMContentLoaded', async () => {
       if (tg) {
         tg.ready();
@@ -1410,115 +1206,9 @@
         if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
       }
 
-      // Применяем сохраненную тему
       applyTheme(currentTheme);
 
-      // Загрузка и сохранение ключа Groq
-      const keyInput = document.getElementById('groqKeyInput');
-      keyInput.value = localStorage.getItem('groq_whisper_key') || '';
-      keyInput.addEventListener('change', () => {
-        localStorage.setItem('groq_whisper_key', keyInput.value.trim());
-      });
-
-      // Запись голоса и отправка в Whisper
-      let mediaRecorder = null;
-      let audioChunks = [];
-      let isRecording = false;
-
-      async function toggleVoiceRecording() {
-        const apiKey = localStorage.getItem('groq_whisper_key') || '';
-        if (!apiKey) {
-          alert('Сначала добавьте бесплатный ключ Groq в Настройках (⚙️)');
-          openSettings();
-          return;
-        }
-
-        const btnVoice = document.getElementById('btnVoice');
-
-        if (isRecording) {
-          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop();
-          }
-          return;
-        }
-
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          
-          let mimeType = 'audio/webm';
-          if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
-          else if (MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/webm';
-
-          mediaRecorder = new MediaRecorder(stream, { mimeType });
-          audioChunks = [];
-
-          mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) audioChunks.push(e.data);
-          };
-
-          mediaRecorder.onstart = () => {
-            isRecording = true;
-            btnVoice.classList.add('recording');
-            btnVoice.textContent = '⏹️';
-            tg?.HapticFeedback?.impactOccurred('medium');
-          };
-
-          mediaRecorder.onstop = async () => {
-            isRecording = false;
-            btnVoice.classList.remove('recording');
-            btnVoice.textContent = '⏳';
-            stream.getTracks().forEach(track => track.stop());
-
-            if (audioChunks.length === 0) {
-              btnVoice.textContent = '🎙️';
-              return;
-            }
-
-            const audioBlob = new Blob(audioChunks, { type: mimeType });
-            
-            try {
-              const ext = mimeType.includes('mp4') ? 'm4a' : 'webm';
-              const formData = new FormData();
-              formData.append('file', audioBlob, `audio.${ext}`);
-              formData.append('model', 'whisper-large-v3-turbo');
-              formData.append('language', 'ru');
-
-              const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${apiKey}` },
-                body: formData
-              });
-
-              if (!response.ok) throw new Error('Ошибка API Groq: ' + response.status);
-
-              const data = await response.json();
-              if (data.text) {
-                const sInput = document.getElementById('sheetInput');
-                sInput.value = sInput.value ? `${sInput.value} ${data.text.trim()}` : data.text.trim();
-                tg?.HapticFeedback?.notificationOccurred('success');
-              }
-            } catch (err) {
-              console.error(err);
-              alert('Ошибка распознавания. Проверьте ключ в настройках.');
-              tg?.HapticFeedback?.notificationOccurred('error');
-            } finally {
-              btnVoice.textContent = '🎙️';
-            }
-          };
-
-          mediaRecorder.start();
-        } catch (err) {
-          console.error(err);
-          alert('Доступ к микрофону отклонен. Разрешите микрофон в Telegram.');
-        }
-      }
-
-      document.getElementById('btnVoice').addEventListener('click', toggleVoiceRecording);
-      // Слушатели кнопок
-      document.getElementById('fabBtn').addEventListener('click', openSheet);
-      document.getElementById('btnSettings').addEventListener('click', openSettings);
-      document.getElementById('sheetBackdrop').addEventListener('click', closeAllSheets);
-      document.getElementById('btnCloseSettings').addEventListener('click', closeAllSheets);
+      // Ключ Groq
       const keyInput = document.getElementById('groqKeyInput');
       if (keyInput) {
         keyInput.value = localStorage.getItem('groq_whisper_key') || '';
@@ -1526,84 +1216,31 @@
           localStorage.setItem('groq_whisper_key', keyInput.value.trim());
         });
       }
+
+      // Кнопки
+      document.getElementById('fabBtn').addEventListener('click', openSheet);
+      document.getElementById('btnSettings').addEventListener('click', openSettings);
+      document.getElementById('sheetBackdrop').addEventListener('click', closeAllSheets);
+      document.getElementById('btnCloseSettings').addEventListener('click', closeAllSheets);
       document.getElementById('btnSheetSubmit').addEventListener('click', submitSheet);
       document.getElementById('sheetInput').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          submitSheet();
-        }
+        if (e.key === 'Enter') { e.preventDefault(); submitSheet(); }
       });
 
-      // Переключатель тем в настройках
       document.querySelectorAll('.theme-card').forEach(card => {
-        card.addEventListener('click', () => {
-          const theme = card.dataset.setTheme;
-          applyTheme(theme);
-          tg?.HapticFeedback?.selectionChanged();
-        });
+        card.addEventListener('click', () => applyTheme(card.dataset.setTheme));
       });
 
-      // Голосовой ввод (Web Speech API)
-      const btnVoice = document.getElementById('btnVoice');
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'ru-RU';
-        recognition.interimResults = false;
-        let isRecording = false;
-
-        btnVoice.addEventListener('click', () => {
-          if (isRecording) {
-            recognition.stop();
-          } else {
-            try {
-              recognition.start();
-              tg?.HapticFeedback?.impactOccurred('medium');
-            } catch (e) {
-              console.warn(e);
-            }
-          }
-        });
-
-        recognition.onstart = () => {
-          isRecording = true;
-          btnVoice.classList.add('recording');
-        };
-
-        recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          const input = document.getElementById('sheetInput');
-          input.value = input.value ? `${input.value} ${transcript}` : transcript;
-          tg?.HapticFeedback?.notificationOccurred('success');
-        };
-
-        recognition.onerror = () => {
-          isRecording = false;
-          btnVoice.classList.remove('recording');
-          tg?.HapticFeedback?.notificationOccurred('error');
-        };
-
-        recognition.onend = () => {
-          isRecording = false;
-          btnVoice.classList.remove('recording');
-        };
-      } else {
-        btnVoice.style.display = 'none'; // Скрываем, если браузер не поддерживает
-      }
-      // Чипсы в шторке задачи
       document.getElementById('pillDate').addEventListener('click', () => {
         if (sheetState.date === 'none') sheetState.date = 'today';
         else if (sheetState.date === 'today') sheetState.date = 'tomorrow';
         else sheetState.date = 'none';
         updateSheetPills();
-        tg?.HapticFeedback?.impactOccurred('light');
       });
 
       document.getElementById('pillUrgent').addEventListener('click', () => {
         sheetState.urgent = !sheetState.urgent;
         updateSheetPills();
-        tg?.HapticFeedback?.impactOccurred('light');
       });
 
       const tagsCycle = ['none', 'работа', 'дом', 'купить', 'спорт', 'деньги'];
@@ -1611,8 +1248,88 @@
         const nextIdx = (tagsCycle.indexOf(sheetState.tag) + 1) % tagsCycle.length;
         sheetState.tag = tagsCycle[nextIdx];
         updateSheetPills();
-        tg?.HapticFeedback?.impactOccurred('light');
       });
+
+      // Запись звука и Whisper
+      let mediaRecorder = null;
+      let audioChunks = [];
+      let isRecording = false;
+
+      const btnVoice = document.getElementById('btnVoice');
+      if (btnVoice) {
+        btnVoice.addEventListener('click', async () => {
+          const apiKey = localStorage.getItem('groq_whisper_key') || '';
+          if (!apiKey) {
+            alert('Сначала укажите ключ Groq в Настройках (шестеренка ⚙️)');
+            openSettings();
+            return;
+          }
+
+          if (isRecording) {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            return;
+          }
+
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            let mimeType = 'audio/webm';
+            if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+            else if (MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/webm';
+
+            mediaRecorder = new MediaRecorder(stream, { mimeType });
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+
+            mediaRecorder.onstart = () => {
+              isRecording = true;
+              btnVoice.classList.add('recording');
+              btnVoice.textContent = '⏹️';
+              tg?.HapticFeedback?.impactOccurred('medium');
+            };
+
+            mediaRecorder.onstop = async () => {
+              isRecording = false;
+              btnVoice.classList.remove('recording');
+              btnVoice.textContent = '⏳';
+              stream.getTracks().forEach(track => track.stop());
+
+              if (audioChunks.length === 0) { btnVoice.textContent = '🎙️'; return; }
+
+              const audioBlob = new Blob(audioChunks, { type: mimeType });
+              try {
+                const ext = mimeType.includes('mp4') ? 'm4a' : 'webm';
+                const formData = new FormData();
+                formData.append('file', audioBlob, `audio.${ext}`);
+                formData.append('model', 'whisper-large-v3-turbo');
+                formData.append('language', 'ru');
+
+                const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${apiKey}` },
+                  body: formData
+                });
+
+                if (!response.ok) throw new Error('API error');
+                const data = await response.json();
+                if (data.text) {
+                  const sInput = document.getElementById('sheetInput');
+                  sInput.value = sInput.value ? `${sInput.value} ${data.text.trim()}` : data.text.trim();
+                  tg?.HapticFeedback?.notificationOccurred('success');
+                }
+              } catch (err) {
+                alert('Ошибка распознавания. Проверьте ключ в настройках.');
+              } finally {
+                btnVoice.textContent = '🎙️';
+              }
+            };
+
+            mediaRecorder.start();
+          } catch (err) {
+            alert('Разрешите доступ к микрофону в Telegram.');
+          }
+        });
+      }
 
       tasks = await loadTasks();
       render();
