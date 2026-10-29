@@ -8,7 +8,7 @@
   <!-- Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <!-- Chrono-node (RU) для парсинга дат -->
+  <!-- Chrono-node (RU) -->
   <script src="https://cdn.jsdelivr.net/npm/chrono-node@2.7.7/dist/bundle.min.js"></script>
 
   <!-- Canvas Confetti -->
@@ -16,25 +16,66 @@
 
   <style>
     /* -------------------------------------------------------------------------
-       THINGS 3 / APPLE DESIGN SYSTEM
+       ДИЗАЙН-СИСТЕМА И ТЕМАТИЧЕСКИЕ ПАЛИТРЫ
        ------------------------------------------------------------------------- */
     :root {
-      --bg: var(--tg-theme-bg-color, #f2f2f7);
-      --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
-      --text: var(--tg-theme-text-color, #000000);
-      --hint: var(--tg-theme-hint-color, #8e8e93);
-      --tint: var(--tg-theme-link-color, #007aff);
-      --danger: var(--tg-theme-destructive-text-color, #ff3b30);
-      --success: #34c759;
-      --separator: rgba(60, 60, 67, 0.12);
-      --sheet-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+      /* По умолчанию: Midnight Сапфир */
+      --bg: #0b0f19;
+      --card-bg: rgba(22, 27, 39, 0.82);
+      --text: #f0f6fc;
+      --hint: #8b949e;
+      --tint: #388bfd;
+      --danger: #ff453a;
+      --success: #32d74b;
+      --separator: rgba(255, 255, 255, 0.08);
+      --sheet-bg: #111622;
+      --glow-1: rgba(56, 139, 253, 0.15);
+      --glow-2: rgba(137, 87, 229, 0.12);
     }
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --separator: rgba(255, 255, 255, 0.1);
-        --sheet-bg: #1c1c1e;
-      }
+    /* Тема: OLED Черный */
+    body[data-theme="oled"] {
+      --bg: #000000;
+      --card-bg: #121214;
+      --text: #ffffff;
+      --hint: #8e8e93;
+      --tint: #0a84ff;
+      --danger: #ff453a;
+      --success: #30d158;
+      --separator: rgba(255, 255, 255, 0.12);
+      --sheet-bg: #161618;
+      --glow-1: transparent;
+      --glow-2: transparent;
+    }
+
+    /* Тема: Aurora (Фиолетовый нео-нуар) */
+    body[data-theme="aurora"] {
+      --bg: #0e091b;
+      --card-bg: rgba(26, 18, 48, 0.75);
+      --text: #f5f0ff;
+      --hint: #9b8eb9;
+      --tint: #bf5af2;
+      --danger: #ff375f;
+      --success: #00f2fe;
+      --separator: rgba(255, 255, 255, 0.09);
+      --sheet-bg: #150d29;
+      --glow-1: rgba(191, 90, 242, 0.22);
+      --glow-2: rgba(0, 242, 254, 0.12);
+    }
+
+    /* Тема: Теплый песок (Warm Minimal) */
+    body[data-theme="warm"] {
+      --bg: #f6f5f0;
+      --card-bg: #ffffff;
+      --text: #2c2523;
+      --hint: #8f8885;
+      --tint: #d9532f;
+      --danger: #e02424;
+      --success: #2e8b57;
+      --separator: rgba(44, 37, 35, 0.08);
+      --sheet-bg: #ffffff;
+      --glow-1: rgba(217, 83, 47, 0.08);
+      --glow-2: rgba(245, 158, 11, 0.08);
     }
 
     * {
@@ -46,28 +87,49 @@
       user-select: none;
     }
 
-    input, textarea {
+    input {
       user-select: text;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Roboto, sans-serif;
       background-color: var(--bg);
       color: var(--text);
-      padding: 16px 16px 90px; /* отступ снизу под Magic Button */
+      padding: 16px 16px 90px;
       padding-top: max(16px, env(safe-area-inset-top));
       padding-bottom: max(90px, env(safe-area-inset-bottom));
       min-height: 100vh;
       overflow-x: hidden;
       touch-action: pan-y;
+      transition: background-color 0.35s ease, color 0.35s ease;
+      position: relative;
+    }
+
+    /* Живое фоновое свечение (Ambient Glow) */
+    .ambient-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background: 
+        radial-gradient(circle at 15% 15%, var(--glow-1) 0%, transparent 45%),
+        radial-gradient(circle at 85% 75%, var(--glow-2) 0%, transparent 45%);
+      transition: all 0.5s ease;
     }
 
     /* -------------------------------------------------------------------------
-       ШАПКА (iOS Large Title + Прогресс)
+       ШАПКА (iOS Large Title + Кнопка настроек)
        ------------------------------------------------------------------------- */
     .header-area {
-      margin-bottom: 14px;
+      margin-bottom: 16px;
       padding: 4px 4px 0;
+    }
+
+    .header-top-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
     }
 
     .header-date {
@@ -76,7 +138,27 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--hint);
-      margin-bottom: 2px;
+    }
+
+    .btn-settings {
+      background: var(--card-bg);
+      border: 1px solid var(--separator);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      color: var(--hint);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: transform 0.15s ease, color 0.2s ease;
+    }
+
+    .btn-settings:active {
+      transform: scale(0.9);
+      color: var(--tint);
     }
 
     .header-row {
@@ -99,7 +181,8 @@
       font-size: 13px;
       font-weight: 600;
       color: var(--tint);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid var(--separator);
+      backdrop-filter: blur(16px);
       display: flex;
       align-items: center;
       gap: 6px;
@@ -137,18 +220,20 @@
       font-weight: 600;
       white-space: nowrap;
       cursor: pointer;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+      border: 1px solid var(--separator);
+      backdrop-filter: blur(12px);
       transition: all 0.2s ease;
     }
 
     .tag-chip.active {
       background: var(--tint);
       color: #ffffff;
-      box-shadow: 0 3px 10px rgba(0, 122, 255, 0.25);
+      border-color: var(--tint);
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
     }
 
     /* -------------------------------------------------------------------------
-       СЕКЦИИ И СПИСКИ (Grouped Inset Lists + Свайпы)
+       СЕКЦИИ И СПИСКИ С СВАЙПАМИ
        ------------------------------------------------------------------------- */
     .section-container {
       margin-bottom: 20px;
@@ -169,12 +254,13 @@
 
     .section-card-group {
       background: var(--card-bg);
-      border-radius: 16px;
+      border-radius: 18px;
       overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+      border: 1px solid var(--separator);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
 
-    /* Контейнер строки с подложкой для свайпа */
     .swipe-row-wrapper {
       position: relative;
       overflow: hidden;
@@ -217,17 +303,16 @@
 
     .task-row {
       position: relative;
-      background: var(--card-bg);
+      background: transparent;
       display: flex;
       align-items: flex-start;
       gap: 12px;
-      padding: 13px 14px;
+      padding: 14px 14px;
       z-index: 2;
       touch-action: pan-y;
       will-change: transform;
     }
 
-    /* Нативный чекбокс Things 3 */
     .checkbox-touch {
       width: 24px;
       height: 24px;
@@ -243,17 +328,19 @@
       width: 22px;
       height: 22px;
       border-radius: 50%;
-      border: 2px solid rgba(142, 142, 147, 0.4);
+      border: 2px solid var(--hint);
       display: flex;
       align-items: center;
       justify-content: center;
       transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      opacity: 0.7;
     }
 
     .completed .checkbox-circle {
       background: var(--success);
       border-color: var(--success);
       transform: scale(1.05);
+      opacity: 1;
     }
 
     .checkbox-circle::after {
@@ -286,6 +373,7 @@
     .completed .task-title {
       text-decoration: line-through;
       color: var(--hint);
+      opacity: 0.6;
     }
 
     .task-meta {
@@ -293,7 +381,7 @@
       flex-wrap: wrap;
       align-items: center;
       gap: 6px;
-      margin-top: 4px;
+      margin-top: 5px;
     }
 
     .meta-tag {
@@ -319,9 +407,6 @@
       color: var(--tint);
     }
 
-    /* -------------------------------------------------------------------------
-       АККОРДЕОН ВЫПОЛНЕННЫХ
-       ------------------------------------------------------------------------- */
     .accordion-toggle {
       width: 100%;
       background: transparent;
@@ -360,7 +445,7 @@
     }
 
     /* -------------------------------------------------------------------------
-       FLOATING MAGIC BUTTON (+) В СТИЛЕ THINGS 3
+       FLOATING MAGIC BUTTON (+)
        ------------------------------------------------------------------------- */
     .fab-btn {
       position: fixed;
@@ -378,26 +463,25 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 8px 24px rgba(0, 122, 255, 0.4);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
       cursor: pointer;
       z-index: 100;
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     .fab-btn:active {
       transform: scale(0.9);
-      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
     }
 
     /* -------------------------------------------------------------------------
-       iOS BOTTOM SHEET (МОДАЛЬНАЯ ШТОРКА ВВОДА)
+       МОДАЛЬНЫЕ ШТОРКИ (Bottom Sheets: Задача и Настройки)
        ------------------------------------------------------------------------- */
     .sheet-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s ease;
@@ -418,7 +502,9 @@
       border-top-left-radius: 24px;
       border-top-right-radius: 24px;
       padding: 12px 18px max(24px, env(safe-area-inset-bottom));
-      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--separator);
+      border-bottom: none;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
       transform: translateY(100%);
       transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
       z-index: 210;
@@ -434,6 +520,13 @@
       border-radius: 2px;
       background: var(--separator);
       margin: 0 auto 16px;
+    }
+
+    .sheet-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: -0.3px;
     }
 
     .sheet-input {
@@ -452,7 +545,6 @@
       font-weight: 400;
     }
 
-    /* Кнопки-чипсы в шторке */
     .sheet-options-row {
       display: flex;
       flex-wrap: wrap;
@@ -461,7 +553,7 @@
     }
 
     .option-pill {
-      background: var(--bg);
+      background: var(--card-bg);
       border: 1px solid var(--separator);
       color: var(--hint);
       padding: 7px 12px;
@@ -501,20 +593,67 @@
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
       transition: transform 0.15s ease;
     }
 
     .btn-sheet-submit:active {
       transform: scale(0.95);
     }
+
+    /* -------------------------------------------------------------------------
+       СЕТКА ВЫБОРА ТЕМЫ В НАСТРОЙКАХ
+       ------------------------------------------------------------------------- */
+    .theme-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .theme-card {
+      background: var(--card-bg);
+      border: 2px solid var(--separator);
+      border-radius: 16px;
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .theme-card.active {
+      border-color: var(--tint);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .theme-preview {
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .theme-name {
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+    }
   </style>
 </head>
-<body>
+<body data-theme="midnight">
 
-  <!-- Заголовок Large Title -->
+  <!-- Фоновый атмосферный свет -->
+  <div class="ambient-glow"></div>
+
+  <!-- Шапка -->
   <div class="header-area">
-    <div class="header-date" id="headerDate">ЧЕТВЕРГ, 29 ОКТЯБРЯ</div>
+    <div class="header-top-line">
+      <div class="header-date" id="headerDate">ЧЕТВЕРГ, 29 ОКТЯБРЯ</div>
+      <button class="btn-settings" id="btnSettings" aria-label="Настройки">⚙️</button>
+    </div>
     <div class="header-row">
       <h1 class="large-title">Задачи</h1>
       <div class="progress-pill">
@@ -527,26 +666,25 @@
   <!-- Фильтр по тегам -->
   <div class="tags-bar" id="tagsBar"></div>
 
-  <!-- Контейнер для секций (Сегодня, Предстоящие, Без даты) -->
+  <!-- Контейнер для секций -->
   <div id="sectionsContainer"></div>
 
   <!-- Аккордеон выполненных дел -->
   <div id="doneAccordionContainer"></div>
 
-  <!-- Floating Magic Button (+) в стиле Things 3 -->
+  <!-- Floating Magic Button (+) -->
   <button class="fab-btn" id="fabBtn" aria-label="Создать задачу">+</button>
 
-  <!-- iOS Bottom Sheet (Модальная шторка ввода) -->
+  <!-- Шторка создания задачи -->
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
   <div class="bottom-sheet" id="bottomSheet">
     <div class="sheet-grabber"></div>
     <input type="text" id="sheetInput" class="sheet-input" placeholder="Что сделать?" autocomplete="off">
     
-    <!-- Интерактивные чипсы -->
     <div class="sheet-options-row">
-      <div class="option-pill" id="pillDate" data-val="none">📅 Срок</div>
+      <div class="option-pill" id="pillDate">📅 Срок</div>
       <div class="option-pill" id="pillUrgent">⚡ Срочно</div>
-      <div class="option-pill" id="pillTag" data-tag="none">🏷️ Тег</div>
+      <div class="option-pill" id="pillTag">🏷️ Тег</div>
     </div>
 
     <div class="sheet-actions">
@@ -554,30 +692,75 @@
     </div>
   </div>
 
+  <!-- Шторка Настроек (Темы оформления) -->
+  <div class="bottom-sheet" id="settingsSheet">
+    <div class="sheet-grabber"></div>
+    <div class="sheet-title">Тема оформления</div>
+    
+    <div class="theme-grid">
+      <!-- Midnight -->
+      <div class="theme-card active" data-set-theme="midnight">
+        <div class="theme-preview" style="background: #0b0f19; border: 1px solid #388bfd;">🌌</div>
+        <div class="theme-name">Сапфир</div>
+      </div>
+      <!-- Aurora -->
+      <div class="theme-card" data-set-theme="aurora">
+        <div class="theme-preview" style="background: #0e091b; border: 1px solid #bf5af2;">🔮</div>
+        <div class="theme-name">Aurora</div>
+      </div>
+      <!-- Warm Sand -->
+      <div class="theme-card" data-set-theme="warm">
+        <div class="theme-preview" style="background: #f6f5f0; color: #2c2523; border: 1px solid #d9532f;">🕯️</div>
+        <div class="theme-name">Песок</div>
+      </div>
+      <!-- OLED Black -->
+      <div class="theme-card" data-set-theme="oled">
+        <div class="theme-preview" style="background: #000000; border: 1px solid #333;">🕶️</div>
+        <div class="theme-name">OLED</div>
+      </div>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn-sheet-submit" id="btnCloseSettings">Закрыть</button>
+    </div>
+  </div>
+
   <script>
     /* -------------------------------------------------------------------------
-       СОСТОЯНИЕ
+       СОСТОЯНИЕ И НАСТРОЙКИ
        ------------------------------------------------------------------------- */
-    const STORAGE_KEY = 'smart_tasks_things_v4';
+    const STORAGE_KEY = 'smart_tasks_things_v5';
+    const THEME_KEY = 'smart_tasks_theme_v1';
     let tasks = [];
     let currentTag = null;
     let isDoneExpanded = false;
+    let currentTheme = localStorage.getItem(THEME_KEY) || 'midnight';
 
-    // Состояние шторки ввода
-    let sheetState = {
-      date: 'none',   // 'none' | 'today' | 'tomorrow'
-      urgent: false,
-      tag: 'none'     // 'none' | 'работа' | 'дом' | 'купить' | 'спорт' | 'деньги'
-    };
-
-    const TAG_EMOJIS = {
-      'работа': '💼', 'дом': '🏠', 'купить': '🛒', 'спорт': '🏋️', 'деньги': '💳'
-    };
+    let sheetState = { date: 'none', urgent: false, tag: 'none' };
+    const TAG_EMOJIS = { 'работа': '💼', 'дом': '🏠', 'купить': '🛒', 'спорт': '🏋️', 'деньги': '💳' };
 
     const tg = window.Telegram?.WebApp;
 
     /* -------------------------------------------------------------------------
-       ПАРСИНГ ЗАДАЧИ С АВТО-ЗАГЛАВНОЙ БУКВОЙ
+       ДВИЖОК ТЕМ
+       ------------------------------------------------------------------------- */
+    function applyTheme(themeName) {
+      currentTheme = themeName;
+      document.body.setAttribute('data-theme', themeName);
+      localStorage.setItem(THEME_KEY, themeName);
+
+      // Обновляем активный бейдж в шторке настроек
+      document.querySelectorAll('.theme-card').forEach(card => {
+        if (card.dataset.setTheme === themeName) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+    }
+
+    /* -------------------------------------------------------------------------
+       ПАРСИНГ ЗАДАЧИ
        ------------------------------------------------------------------------- */
     function parseTask(rawText, explicitDate, explicitUrgent, explicitTag) {
       if (!rawText || !rawText.trim()) return null;
@@ -588,7 +771,6 @@
       let deadline = null;
 
       try {
-        // Проверяем явный выбор даты из чипса
         const now = new Date();
         if (explicitDate === 'today') {
           now.setHours(23, 59, 59, 999);
@@ -599,14 +781,12 @@
           deadline = now.toISOString();
         }
 
-        // Приоритет в тексте
         const priorityRegex = /(?:^|\s)(срочно|важно|!!!)(?:\s|$)/gi;
         if (priorityRegex.test(text)) {
           priority = 'high';
           text = text.replace(priorityRegex, ' ').trim();
         }
 
-        // Теги в тексте
         const tagRegex = /(?:^|\s)#([a-zA-Zа-яА-ЯёЁ0-9_-]+)/g;
         let tagMatch;
         while ((tagMatch = tagRegex.exec(text)) !== null) {
@@ -614,7 +794,6 @@
         }
         text = text.replace(tagRegex, ' ').trim();
 
-        // Дата/время в тексте через Chrono (если не было выбрано кнопкой)
         if (!deadline) {
           const chronoParser = window.chrono?.ru || window.chrono;
           if (chronoParser) {
@@ -629,7 +808,6 @@
         console.error('Ошибка в парсере:', err);
       }
 
-      // Делаем первую букву заглавной
       let cleanedTitle = text.replace(/\s+/g, ' ').trim();
       if (cleanedTitle.length > 0) {
         cleanedTitle = cleanedTitle.charAt(0).toUpperCase() + cleanedTitle.slice(1);
@@ -647,7 +825,7 @@
     }
 
     /* -------------------------------------------------------------------------
-       ХРАНИЛИЩЕ (CloudStorage + Fallback)
+       ХРАНИЛИЩЕ
        ------------------------------------------------------------------------- */
     const isCloudSupported = Boolean(
       tg?.isVersionAtLeast && tg.isVersionAtLeast('6.9') && tg.CloudStorage
@@ -689,7 +867,7 @@
     }
 
     /* -------------------------------------------------------------------------
-       ДЕЙСТВИЯ С ЗАДАЧАМИ
+       ДЕЙСТВИЯ
        ------------------------------------------------------------------------- */
     function toggleTask(id) {
       const task = tasks.find(t => t.id === id);
@@ -706,7 +884,7 @@
             particleCount: 40,
             spread: 60,
             origin: { y: 0.75 },
-            colors: ['#007aff', '#34c759', '#ff9500']
+            colors: ['#388bfd', '#32d74b', '#bf5af2']
           });
         }
       } else {
@@ -722,14 +900,13 @@
     }
 
     /* -------------------------------------------------------------------------
-       УПРАВЛЕНИЕ BOTTOM SHEET (ШТОРКОЙ)
+       ШТОРКИ
        ------------------------------------------------------------------------- */
     function openSheet() {
       const sheet = document.getElementById('bottomSheet');
       const backdrop = document.getElementById('sheetBackdrop');
       const input = document.getElementById('sheetInput');
 
-      // Сброс состояния
       sheetState = { date: 'none', urgent: false, tag: 'none' };
       updateSheetPills();
       input.value = '';
@@ -740,14 +917,20 @@
       tg?.HapticFeedback?.impactOccurred('medium');
     }
 
-    function closeSheet() {
+    function openSettings() {
+      document.getElementById('sheetBackdrop').classList.add('active');
+      document.getElementById('settingsSheet').classList.add('active');
+      tg?.HapticFeedback?.impactOccurred('light');
+    }
+
+    function closeAllSheets() {
       document.getElementById('bottomSheet').classList.remove('active');
+      document.getElementById('settingsSheet').classList.remove('active');
       document.getElementById('sheetBackdrop').classList.remove('active');
       document.getElementById('sheetInput').blur();
     }
 
     function updateSheetPills() {
-      // Кнопка даты
       const pDate = document.getElementById('pillDate');
       if (sheetState.date === 'today') {
         pDate.textContent = '📅 Сегодня';
@@ -760,15 +943,9 @@
         pDate.className = 'option-pill';
       }
 
-      // Кнопка срочности
       const pUrgent = document.getElementById('pillUrgent');
-      if (sheetState.urgent) {
-        pUrgent.className = 'option-pill active urgent';
-      } else {
-        pUrgent.className = 'option-pill';
-      }
+      pUrgent.className = sheetState.urgent ? 'option-pill active urgent' : 'option-pill';
 
-      // Кнопка тега
       const pTag = document.getElementById('pillTag');
       if (sheetState.tag !== 'none') {
         pTag.textContent = `${TAG_EMOJIS[sheetState.tag] || '🏷️'} ${sheetState.tag}`;
@@ -783,7 +960,7 @@
       const input = document.getElementById('sheetInput');
       const val = input.value;
       if (!val || !val.trim()) {
-        closeSheet();
+        closeAllSheets();
         return;
       }
 
@@ -795,12 +972,9 @@
         tg?.HapticFeedback?.notificationOccurred('success');
       }
 
-      closeSheet();
+      closeAllSheets();
     }
 
-    /* -------------------------------------------------------------------------
-       ФОРМАТИРОВАНИЕ
-       ------------------------------------------------------------------------- */
     function formatMetaDate(isoString) {
       if (!isoString) return null;
       const d = new Date(isoString);
@@ -822,20 +996,17 @@
     }
 
     /* -------------------------------------------------------------------------
-       РЕНДЕРИНГ И СВАЙПЫ
+       РЕНДЕР
        ------------------------------------------------------------------------- */
     function render() {
-      // 1. Дата в шапке
       const now = new Date();
       document.getElementById('headerDate').textContent = 
         now.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
 
-      // 2. Статистика
       const activeTasks = tasks.filter(t => !t.completed);
       const doneTasks = tasks.filter(t => t.completed);
       document.getElementById('progressText').textContent = `${doneTasks.length}/${tasks.length}`;
 
-      // 3. Теги в строке фильтра
       const allTags = new Set();
       tasks.forEach(t => t.tags?.forEach(tag => allTags.add(tag)));
       const tagsBar = document.getElementById('tagsBar');
@@ -861,10 +1032,7 @@
         });
       }
 
-      // 4. Фильтруем активные
       const visibleActive = activeTasks.filter(t => !currentTag || t.tags?.includes(currentTag));
-
-      // 5. Группы
       const todayGroup = [];
       const upcomingGroup = [];
       const noDateGroup = [];
@@ -877,11 +1045,8 @@
           noDateGroup.push(task);
         } else {
           const dTime = new Date(task.deadline).getTime();
-          if (dTime <= endOfToday) {
-            todayGroup.push(task);
-          } else {
-            upcomingGroup.push(task);
-          }
+          if (dTime <= endOfToday) todayGroup.push(task);
+          else upcomingGroup.push(task);
         }
       });
 
@@ -892,23 +1057,20 @@
       const secContainer = document.getElementById('sectionsContainer');
       secContainer.innerHTML = '';
 
-      // Пустой экран
       if (visibleActive.length === 0 && doneTasks.length === 0) {
         secContainer.innerHTML = `
           <div class="empty-state">
             <div class="empty-state-icon">✍️</div>
             <div class="empty-state-title">Все дела сделаны</div>
-            <div class="empty-state-desc">Нажмите кнопку «+» внизу, чтобы добавить задачу</div>
+            <div class="empty-state-desc">Нажмите «+» внизу для новой задачи</div>
           </div>
         `;
       }
 
-      // Рендерим секции
-      if (todayGroup.length > 0) renderSection(secContainer, 'Сегодня', todayGroup, '#ff3b30');
-      if (upcomingGroup.length > 0) renderSection(secContainer, 'Предстоящие', upcomingGroup, '#007aff');
-      if (noDateGroup.length > 0) renderSection(secContainer, 'Без даты', noDateGroup, '#8e8e93');
+      if (todayGroup.length > 0) renderSection(secContainer, 'Сегодня', todayGroup, 'var(--danger)');
+      if (upcomingGroup.length > 0) renderSection(secContainer, 'Предстоящие', upcomingGroup, 'var(--tint)');
+      if (noDateGroup.length > 0) renderSection(secContainer, 'Без даты', noDateGroup, 'var(--hint)');
 
-      // 6. Аккордеон выполненных
       const accContainer = document.getElementById('doneAccordionContainer');
       accContainer.innerHTML = '';
 
@@ -951,7 +1113,6 @@
         const wrapper = document.createElement('div');
         wrapper.className = 'swipe-row-wrapper';
 
-        // Подложки свайпа
         const bgRight = document.createElement('div');
         bgRight.className = 'swipe-reveal-bg right';
         bgRight.textContent = '✓ Готово';
@@ -963,7 +1124,6 @@
         const row = document.createElement('div');
         row.className = `task-row ${task.completed ? 'completed' : ''}`;
 
-        // Чекбокс
         const chkBox = document.createElement('div');
         chkBox.className = 'checkbox-touch';
         chkBox.onclick = (e) => { e.stopPropagation(); toggleTask(task.id); };
@@ -971,7 +1131,6 @@
         chkCircle.className = 'checkbox-circle';
         chkBox.appendChild(chkCircle);
 
-        // Контент
         const content = document.createElement('div');
         content.className = 'task-content';
 
@@ -1014,7 +1173,7 @@
         row.appendChild(chkBox);
         row.appendChild(content);
 
-        // --- ЛОГИКА ТАЧ-СВАЙПОВ ---
+        // Тач-свайпы
         let startX = 0;
         let startY = 0;
         let currentDiffX = 0;
@@ -1034,14 +1193,12 @@
           const diffX = x - startX;
           const diffY = y - startY;
 
-          // Определяем, свайпает ли пользователь горизонтально
           if (!isHorizontalSwipe && Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 10) {
             isHorizontalSwipe = true;
           }
 
           if (isHorizontalSwipe) {
             currentDiffX = diffX;
-            // Ограничиваем ход свайпа
             if (Math.abs(currentDiffX) < 140) {
               row.style.transform = `translateX(${currentDiffX}px)`;
               if (currentDiffX > 20) {
@@ -1061,17 +1218,13 @@
           bgRight.style.opacity = '0';
           bgLeft.style.opacity = '0';
 
-          if (currentDiffX > 75) {
-            toggleTask(task.id);
-          } else if (currentDiffX < -75) {
-            deleteTask(task.id);
-          }
+          if (currentDiffX > 75) toggleTask(task.id);
+          else if (currentDiffX < -75) deleteTask(task.id);
         });
 
         wrapper.appendChild(bgRight);
         wrapper.appendChild(bgLeft);
         wrapper.appendChild(row);
-
         cardGroup.appendChild(wrapper);
       });
 
@@ -1080,7 +1233,7 @@
     }
 
     /* -------------------------------------------------------------------------
-       ИНИЦИАЛИЗАЦИЯ И СЛУШАТЕЛИ
+       ИНИЦИАЛИЗАЦИЯ
        ------------------------------------------------------------------------- */
     document.addEventListener('DOMContentLoaded', async () => {
       if (tg) {
@@ -1089,9 +1242,14 @@
         if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
       }
 
-      // Открытие/закрытие шторки
+      // Применяем сохраненную тему
+      applyTheme(currentTheme);
+
+      // Слушатели кнопок
       document.getElementById('fabBtn').addEventListener('click', openSheet);
-      document.getElementById('sheetBackdrop').addEventListener('click', closeSheet);
+      document.getElementById('btnSettings').addEventListener('click', openSettings);
+      document.getElementById('sheetBackdrop').addEventListener('click', closeAllSheets);
+      document.getElementById('btnCloseSettings').addEventListener('click', closeAllSheets);
       document.getElementById('btnSheetSubmit').addEventListener('click', submitSheet);
       document.getElementById('sheetInput').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -1100,7 +1258,16 @@
         }
       });
 
-      // Переключение чипсов в шторке
+      // Переключатель тем в настройках
+      document.querySelectorAll('.theme-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const theme = card.dataset.setTheme;
+          applyTheme(theme);
+          tg?.HapticFeedback?.selectionChanged();
+        });
+      });
+
+      // Чипсы в шторке задачи
       document.getElementById('pillDate').addEventListener('click', () => {
         if (sheetState.date === 'none') sheetState.date = 'today';
         else if (sheetState.date === 'today') sheetState.date = 'tomorrow';
