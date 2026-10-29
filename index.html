@@ -840,7 +840,38 @@
         resolve(local ? JSON.parse(local) : []);
       } catch (e) { resolve([]); }
     }
+/* ЗВУКОВОЙ ДВИЖОК APPLE (WEB AUDIO API) */
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+    function playUiSound(type = 'click') {
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'complete') {
+          // Мажорный переливчатый "дзинь" при закрытии задачи
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Ре
+          osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.12); // Ля
+          gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.18);
+        } else if (type === 'delete') {
+          // Мягкий низкий щелчок корзины
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.08);
+          gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.09);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.09);
+        }
+      } catch (e) {}
+    }
     /* ДЕЙСТВИЯ */
     function toggleTask(id) {
       const task = tasks.find(t => t.id === id);
@@ -852,6 +883,7 @@
 
       if (task.completed) {
         tg?.HapticFeedback?.notificationOccurred('success');
+        playUiSound('complete');
         if (typeof confetti === 'function') {
           confetti({ particleCount: 40, spread: 60, origin: { y: 0.75 }, colors: ['#388bfd', '#32d74b', '#bf5af2'] });
         }
@@ -865,6 +897,7 @@
       saveTasks();
       render();
       tg?.HapticFeedback?.impactOccurred('medium');
+      playUiSound('delete');
     }
 
     /* ШТОРКИ */
@@ -1057,7 +1090,11 @@
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'accordion-toggle';
         toggleBtn.innerHTML = `<span>Выполнено (${doneTasks.length})</span><span>${isDoneExpanded ? '▲' : '▼'}</span>`;
-        toggleBtn.onclick = () => { isDoneExpanded = !isDoneExpanded; render(); };
+        toggleBtn.onclick = () => { 
+          isDoneExpanded = !isDoneExpanded; 
+          render(); 
+          tg?.HapticFeedback?.impactOccurred('light'); 
+        };
         accContainer.appendChild(toggleBtn);
 
         if (isDoneExpanded) renderSection(accContainer, null, doneTasks, null, true);
@@ -1144,50 +1181,84 @@
         row.appendChild(chkBox);
         row.appendChild(content);
 
-        // Тач-свайпы
+       // Настоящий свайп iOS с пружиной и вибро-откликом
         let startX = 0;
         let startY = 0;
         let currentDiffX = 0;
-        let isHorizontalSwipe = false;
+        let isHorizontal = false;
+        let triggeredHaptic = false;
 
         row.addEventListener('touchstart', (e) => {
           startX = e.touches[0].clientX;
           startY = e.touches[0].clientY;
           currentDiffX = 0;
-          isHorizontalSwipe = false;
+          isHorizontal = false;
+          triggeredHaptic = false;
           row.style.transition = 'none';
         }, { passive: true });
 
         row.addEventListener('touchmove', (e) => {
-          const x = e.touches[0].clientX;
-          const y = e.touches[0].clientY;
-          const diffX = x - startX;
-          const diffY = y - startY;
+          const diffX = e.touches[0].clientX - startX;
+          const diffY = e.touches[0].clientY - startY;
 
-          if (!isHorizontalSwipe && Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 10) {
-            isHorizontalSwipe = true;
+          if (!isHorizontal && Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 8) {
+            isHorizontal = true;
           }
 
-          if (isHorizontalSwipe) {
-            currentDiffX = diffX;
-            if (Math.abs(currentDiffX) < 140) {
-              row.style.transform = `translateX(${currentDiffX}px)`;
-              if (currentDiffX > 20) { bgRight.style.opacity = '1'; bgLeft.style.opacity = '0'; }
-              else if (currentDiffX < -20) { bgLeft.style.opacity = '1'; bgRight.style.opacity = '0'; }
+          if (isHorizontal) {
+            // Эластичное сопротивление (Rubber-banding как в iOS)
+            const maxDrag = 90;
+            if (Math.abs(diffX) > maxDrag) {
+              const extra = Math.abs(diffX) - maxDrag;
+              currentDiffX = (diffX > 0 ? 1 : -1) * (maxDrag + extra * 0.28);
+            } else {
+              currentDiffX = diffX;
+            }
+
+            row.style.transform = `translateX(${currentDiffX}px)`;
+
+            // Плавное нарастание цвета подложки
+            const progress = Math.min(1, Math.abs(currentDiffX) / 70);
+            if (currentDiffX > 10) {
+              bgRight.style.opacity = progress;
+              bgLeft.style.opacity = '0';
+            } else if (currentDiffX < -10) {
+              bgLeft.style.opacity = progress;
+              bgRight.style.opacity = '0';
+            } else {
+              bgRight.style.opacity = '0';
+              bgLeft.style.opacity = '0';
+            }
+
+            // Тактильный щелчок в момент преодоления порога действия
+            if (Math.abs(currentDiffX) >= 75 && !triggeredHaptic) {
+              tg?.HapticFeedback?.selectionChanged();
+              triggeredHaptic = true;
+            } else if (Math.abs(currentDiffX) < 75 && triggeredHaptic) {
+              triggeredHaptic = false;
             }
           }
         }, { passive: true });
 
         row.addEventListener('touchend', () => {
-          row.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+          // Мягкий возврат пружиной
+          row.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1)';
           row.style.transform = 'translateX(0px)';
-          bgRight.style.opacity = '0';
-          bgLeft.style.opacity = '0';
 
-          if (currentDiffX > 75) toggleTask(task.id);
-          else if (currentDiffX < -75) deleteTask(task.id);
+          // Фон гаснет плавно ТОЛЬКО после отлета карточки, а не обрывается сразу
+          setTimeout(() => {
+            bgRight.style.transition = 'opacity 0.2s ease';
+            bgLeft.style.transition = 'opacity 0.2s ease';
+            bgRight.style.opacity = '0';
+            bgLeft.style.opacity = '0';
+          }, 180);
+
+          if (currentDiffX >= 75) {
+            toggleTask(task.id);
+          } else if (currentDiffX <= -75) {
+            deleteTask(task.id);
+          }
         });
-
         wrapper.appendChild(bgRight);
         wrapper.appendChild(bgLeft);
         wrapper.appendChild(row);
@@ -1228,7 +1299,10 @@
       });
 
       document.querySelectorAll('.theme-card').forEach(card => {
-        card.addEventListener('click', () => applyTheme(card.dataset.setTheme));
+        card.addEventListener('click', () => {
+          applyTheme(card.dataset.setTheme);
+          tg?.HapticFeedback?.selectionChanged();
+        });
       });
 
       document.getElementById('pillDate').addEventListener('click', () => {
