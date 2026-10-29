@@ -649,7 +649,10 @@
   <!-- Шапка -->
   <div class="header-area">
     <div class="header-top-line">
-      <div class="header-date" id="headerDate">СЕГОДНЯ</div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="header-date" id="headerDate">СЕГОДНЯ</div>
+        <div id="streakBadge" style="display: none; font-size: 11px; font-weight: 700; background: rgba(255, 149, 0, 0.15); color: #ff9500; padding: 2px 7px; border-radius: 999px;">🔥 0</div>
+      </div>
       <button class="btn-settings" id="btnSettings" aria-label="Настройки">⚙️</button>
     </div>
     <div class="header-row">
@@ -805,7 +808,56 @@
         createdAt: new Date().toISOString()
       };
     }
+/* СТРИКИ ПРОДУКТИВНОСТИ */
+    const STREAK_KEY = 'smart_tasks_streak_v1';
+    let streakData = JSON.parse(localStorage.getItem(STREAK_KEY) || '{"count":0,"lastDate":""}');
 
+    function getTodayKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function getYesterdayKey() {
+      const d = new Date(Date.now() - 86400000);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function updateStreakBadge() {
+      const badge = document.getElementById('streakBadge');
+      if (!badge) return;
+      const today = getTodayKey();
+      const yesterday = getYesterdayKey();
+
+      // Если пропустили день — стрик сгорает
+      if (streakData.lastDate && streakData.lastDate !== today && streakData.lastDate !== yesterday) {
+        streakData.count = 0;
+        localStorage.setItem(STREAK_KEY, JSON.stringify(streakData));
+      }
+
+      if (streakData.count > 0) {
+        badge.style.display = 'inline-block';
+        badge.textContent = `🔥 ${streakData.count} дн.`;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    function recordStreakOnComplete() {
+      const today = getTodayKey();
+      const yesterday = getYesterdayKey();
+
+      if (streakData.lastDate === today) return; // Сегодня уже засчитано
+
+      if (streakData.lastDate === yesterday) {
+        streakData.count += 1;
+      } else {
+        streakData.count = 1;
+      }
+
+      streakData.lastDate = today;
+      localStorage.setItem(STREAK_KEY, JSON.stringify(streakData));
+      updateStreakBadge();
+    }
     /* ХРАНИЛИЩЕ */
     const isCloudSupported = Boolean(tg?.isVersionAtLeast && tg.isVersionAtLeast('6.9') && tg.CloudStorage);
 
@@ -887,6 +939,7 @@
 
       if (task.completed) {
         tg?.HapticFeedback?.notificationOccurred('success');
+        recordStreakOnComplete();
         playUiSound('complete');
         if (typeof confetti === 'function') {
           confetti({ particleCount: 40, spread: 60, origin: { y: 0.75 }, colors: ['#388bfd', '#32d74b', '#bf5af2'] });
@@ -1090,19 +1143,49 @@
       const accContainer = document.getElementById('doneAccordionContainer');
       accContainer.innerHTML = '';
 
-      if (doneTasks.length > 0) {
+     if (doneTasks.length > 0) {
+        const accHeader = document.createElement('div');
+        accHeader.style.display = 'flex';
+        accHeader.style.alignItems = 'center';
+        accHeader.style.justifyContent = 'space-between';
+        accHeader.style.padding = '4px 6px 4px 14px';
+
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'accordion-toggle';
-        toggleBtn.innerHTML = `<span>Выполнено (${doneTasks.length})</span><span>${isDoneExpanded ? '▲' : '▼'}</span>`;
+        toggleBtn.style.padding = '0';
+        toggleBtn.style.margin = '0';
+        toggleBtn.style.width = 'auto';
+        toggleBtn.innerHTML = `<span>Выполнено (${doneTasks.length}) ${isDoneExpanded ? '▲' : '▼'}</span>`;
         toggleBtn.onclick = () => { 
           isDoneExpanded = !isDoneExpanded; 
           render(); 
           tg?.HapticFeedback?.impactOccurred('light'); 
         };
-        accContainer.appendChild(toggleBtn);
+
+        const clearBtn = document.createElement('button');
+        clearBtn.style.background = 'none';
+        clearBtn.style.border = 'none';
+        clearBtn.style.color = 'var(--danger)';
+        clearBtn.style.fontSize = '12px';
+        clearBtn.style.fontWeight = '600';
+        clearBtn.style.cursor = 'pointer';
+        clearBtn.style.padding = '6px 8px';
+        clearBtn.textContent = 'Очистить 🗑️';
+        clearBtn.onclick = () => {
+          tasks = tasks.filter(t => !t.completed);
+          saveTasks();
+          render();
+          tg?.HapticFeedback?.notificationOccurred('warning');
+          playUiSound('delete');
+        };
+
+        accHeader.appendChild(toggleBtn);
+        accHeader.appendChild(clearBtn);
+        accContainer.appendChild(accHeader);
 
         if (isDoneExpanded) renderSection(accContainer, null, doneTasks, null, true);
       }
+      updateStreakBadge();
     }
 
     function renderSection(parentEl, title, taskList, accentColor) {
@@ -1126,11 +1209,11 @@
 
         const bgRight = document.createElement('div');
         bgRight.className = 'swipe-reveal-bg right';
-        bgRight.innerHTML = '<span style="font-size: 24px; font-weight: 700; line-height: 1;">✓</span>';
+        bgRight.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 
         const bgLeft = document.createElement('div');
         bgLeft.className = 'swipe-reveal-bg left';
-        bgLeft.innerHTML = '<span style="font-size: 24px; font-weight: 700; line-height: 1;">✕</span>';
+        bgLeft.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
 
         const row = document.createElement('div');
         row.className = `task-row ${task.completed ? 'completed' : ''}`;
