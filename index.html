@@ -599,7 +599,69 @@
     .btn-sheet-submit:active {
       transform: scale(0.95);
     }
+/* Микрофон и поле для ключа */
+    .sheet-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
 
+    .sheet-input-row .sheet-input {
+      margin-bottom: 0;
+    }
+
+    .btn-voice {
+      background: var(--card-bg);
+      border: 1px solid var(--separator);
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .btn-voice:active {
+      transform: scale(0.92);
+    }
+
+    .btn-voice.recording {
+      background: var(--danger);
+      border-color: var(--danger);
+      animation: pulseMic 1.2s infinite;
+    }
+
+    @keyframes pulseMic {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.6); }
+      70% { transform: scale(1.08); box-shadow: 0 0 0 12px rgba(255, 69, 58, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 69, 58, 0); }
+    }
+
+    .settings-sub {
+      font-size: 13px;
+      color: var(--hint);
+      margin-bottom: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .settings-key-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--separator);
+      padding: 10px 14px;
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 18px;
+    }
     /* -------------------------------------------------------------------------
        СЕТКА ВЫБОРА ТЕМЫ В НАСТРОЙКАХ
        ------------------------------------------------------------------------- */
@@ -722,7 +784,10 @@
   <div class="bottom-sheet" id="bottomSheet">
     <div class="sheet-grabber"></div>
     <div class="sheet-input-row">
+      <div class="sheet-input-row">
       <input type="text" id="sheetInput" class="sheet-input" placeholder="Что сделать?" autocomplete="off">
+      <button class="btn-voice" id="btnVoice" type="button" aria-label="Записать голос">🎙️</button>
+    </div>
       <button class="btn-voice" id="btnVoice" type="button" aria-label="Голосовой ввод">🎙️</button>
     </div>
     
@@ -732,6 +797,8 @@
       <div class="option-pill" id="pillTag">🏷️ Тег</div>
     </div>
 
+    <div class="settings-sub">Голосовой ввод (Groq Whisper API)</div>
+    <input type="password" id="groqKeyInput" class="settings-key-input" placeholder="Вставьте ключ gsk_..." autocomplete="off">
     <div class="sheet-actions">
       <button class="btn-sheet-submit" id="btnSheetSubmit">Готово</button>
     </div>
@@ -1340,6 +1407,107 @@
       // Применяем сохраненную тему
       applyTheme(currentTheme);
 
+      // Загрузка и сохранение ключа Groq
+      const keyInput = document.getElementById('groqKeyInput');
+      keyInput.value = localStorage.getItem('groq_whisper_key') || '';
+      keyInput.addEventListener('change', () => {
+        localStorage.setItem('groq_whisper_key', keyInput.value.trim());
+      });
+
+      // Запись голоса и отправка в Whisper
+      let mediaRecorder = null;
+      let audioChunks = [];
+      let isRecording = false;
+
+      async function toggleVoiceRecording() {
+        const apiKey = localStorage.getItem('groq_whisper_key') || '';
+        if (!apiKey) {
+          alert('Сначала добавьте бесплатный ключ Groq в Настройках (⚙️)');
+          openSettings();
+          return;
+        }
+
+        const btnVoice = document.getElementById('btnVoice');
+
+        if (isRecording) {
+          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+          }
+          return;
+        }
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          
+          let mimeType = 'audio/webm';
+          if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+          else if (MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/webm';
+
+          mediaRecorder = new MediaRecorder(stream, { mimeType });
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+          };
+
+          mediaRecorder.onstart = () => {
+            isRecording = true;
+            btnVoice.classList.add('recording');
+            btnVoice.textContent = '⏹️';
+            tg?.HapticFeedback?.impactOccurred('medium');
+          };
+
+          mediaRecorder.onstop = async () => {
+            isRecording = false;
+            btnVoice.classList.remove('recording');
+            btnVoice.textContent = '⏳';
+            stream.getTracks().forEach(track => track.stop());
+
+            if (audioChunks.length === 0) {
+              btnVoice.textContent = '🎙️';
+              return;
+            }
+
+            const audioBlob = new Blob(audioChunks, { type: mimeType });
+            
+            try {
+              const ext = mimeType.includes('mp4') ? 'm4a' : 'webm';
+              const formData = new FormData();
+              formData.append('file', audioBlob, `audio.${ext}`);
+              formData.append('model', 'whisper-large-v3-turbo');
+              formData.append('language', 'ru');
+
+              const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${apiKey}` },
+                body: formData
+              });
+
+              if (!response.ok) throw new Error('Ошибка API Groq: ' + response.status);
+
+              const data = await response.json();
+              if (data.text) {
+                const sInput = document.getElementById('sheetInput');
+                sInput.value = sInput.value ? `${sInput.value} ${data.text.trim()}` : data.text.trim();
+                tg?.HapticFeedback?.notificationOccurred('success');
+              }
+            } catch (err) {
+              console.error(err);
+              alert('Ошибка распознавания. Проверьте ключ в настройках.');
+              tg?.HapticFeedback?.notificationOccurred('error');
+            } finally {
+              btnVoice.textContent = '🎙️';
+            }
+          };
+
+          mediaRecorder.start();
+        } catch (err) {
+          console.error(err);
+          alert('Доступ к микрофону отклонен. Разрешите микрофон в Telegram.');
+        }
+      }
+
+      document.getElementById('btnVoice').addEventListener('click', toggleVoiceRecording);
       // Слушатели кнопок
       document.getElementById('fabBtn').addEventListener('click', openSheet);
       document.getElementById('btnSettings').addEventListener('click', openSettings);
