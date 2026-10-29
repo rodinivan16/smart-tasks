@@ -241,66 +241,60 @@
     }
 
     .section-card-group {
-      background: var(--card-bg);
-      border-radius: 18px;
-      overflow: hidden;
-      border: 1px solid var(--separator);
-      backdrop-filter: blur(20px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px; /* Отступы между овалами */
     }
 
+    /* Подложка с цветом */
     .swipe-row-wrapper {
       position: relative;
+      border-radius: 16px;
       overflow: hidden;
-    }
-
-    .swipe-row-wrapper:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 48px;
-      right: 0;
-      height: 0.5px;
-      background: var(--separator);
-      z-index: 1;
+      background: transparent;
     }
 
     .swipe-reveal-bg {
       position: absolute;
       inset: 0;
-      display: flex;
+      display: none;
       align-items: center;
       padding: 0 20px;
       font-weight: 700;
       font-size: 14px;
       color: #ffffff;
-      opacity: 0;
-      transition: opacity 0.15s ease;
-      z-index: 0;
+      border-radius: 16px;
+      z-index: 1;
     }
 
     .swipe-reveal-bg.right {
       justify-content: flex-start;
-      background: var(--success);
+      background: #32d74b;
     }
 
     .swipe-reveal-bg.left {
       justify-content: flex-end;
-      background: var(--danger);
+      background: #ff453a;
     }
 
+    /* Сам непрозрачный овал с задачей (физическая плашка) */
     .task-row {
       position: relative;
-      background: transparent;
+      background: var(--card-bg); /* ПЛОТНЫЙ НЕПРОЗРАЧНЫЙ ФОН: текст никогда не просвечивает */
+      border: 1px solid var(--separator);
+      border-radius: 16px;
       display: flex;
       align-items: flex-start;
       gap: 12px;
-      padding: 14px 14px;
+      padding: 14px 16px;
       z-index: 2;
       touch-action: pan-y;
       will-change: transform;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
-
     .checkbox-touch {
       width: 24px;
       height: 24px;
@@ -841,11 +835,23 @@
       } catch (e) { resolve([]); }
     }
 /* ЗВУКОВОЙ ДВИЖОК APPLE (WEB AUDIO API) */
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioCtx;
+    }
 
     function playUiSound(type = 'click') {
       try {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const ctx = getAudioContext();
+        if (ctx.state === 'suspended') ctx.resume();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain);
@@ -1181,7 +1187,7 @@
         row.appendChild(chkBox);
         row.appendChild(content);
 
-       // Настоящий свайп iOS с пружиной и вибро-откликом
+        // Чистый сдвиг плашки овала
         let startX = 0;
         let startY = 0;
         let currentDiffX = 0;
@@ -1206,31 +1212,30 @@
           }
 
           if (isHorizontal) {
-            // Эластичное сопротивление (Rubber-banding как в iOS)
+            // Эластичное натяжение
             const maxDrag = 90;
             if (Math.abs(diffX) > maxDrag) {
               const extra = Math.abs(diffX) - maxDrag;
-              currentDiffX = (diffX > 0 ? 1 : -1) * (maxDrag + extra * 0.28);
+              currentDiffX = (diffX > 0 ? 1 : -1) * (maxDrag + extra * 0.3);
             } else {
               currentDiffX = diffX;
             }
 
+            // Двигаем только сам овал
             row.style.transform = `translate3d(${currentDiffX}px, 0, 0)`;
 
-            // Плавное нарастание цвета подложки
-            const progress = Math.min(1, Math.abs(currentDiffX) / 70);
-            if (currentDiffX > 10) {
-              bgRight.style.opacity = progress;
-              bgLeft.style.opacity = '0';
-            } else if (currentDiffX < -10) {
-              bgLeft.style.opacity = progress;
-              bgRight.style.opacity = '0';
+            // Показываем ТОЛЬКО нужный цвет за овалом (без наложения текстов)
+            if (currentDiffX > 8) {
+              bgRight.style.display = 'flex';
+              bgLeft.style.display = 'none';
+            } else if (currentDiffX < -8) {
+              bgLeft.style.display = 'flex';
+              bgRight.style.display = 'none';
             } else {
-              bgRight.style.opacity = '0';
-              bgLeft.style.opacity = '0';
+              bgRight.style.display = 'none';
+              bgLeft.style.display = 'none';
             }
 
-            // Тактильный щелчок в момент преодоления порога действия
             if (Math.abs(currentDiffX) >= 75 && !triggeredHaptic) {
               tg?.HapticFeedback?.selectionChanged();
               triggeredHaptic = true;
@@ -1241,24 +1246,20 @@
         }, { passive: true });
 
         row.addEventListener('touchend', () => {
-          // Мягкий возврат пружиной
-          row.style.transition = 'transform 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.15)';
-row.style.transform = 'translate3d(0, 0, 0)';
-          row.style.transform = 'translateX(0px)';
-
-          // Фон гаснет плавно ТОЛЬКО после отлета карточки, а не обрывается сразу
-          setTimeout(() => {
-            bgRight.style.transition = 'opacity 0.2s ease';
-            bgLeft.style.transition = 'opacity 0.2s ease';
-            bgRight.style.opacity = '0';
-            bgLeft.style.opacity = '0';
-          }, 180);
+          // Мягкий отскок овала на место
+          row.style.transition = 'transform 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.15)';
+          row.style.transform = 'translate3d(0, 0, 0)';
 
           if (currentDiffX >= 75) {
             toggleTask(task.id);
           } else if (currentDiffX <= -75) {
             deleteTask(task.id);
           }
+
+          setTimeout(() => {
+            bgRight.style.display = 'none';
+            bgLeft.style.display = 'none';
+          }, 320);
         });
         wrapper.appendChild(bgRight);
         wrapper.appendChild(bgLeft);
