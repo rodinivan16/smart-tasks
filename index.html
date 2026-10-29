@@ -735,6 +735,7 @@
     let currentTag = null;
     let isDoneExpanded = false;
     let currentTheme = localStorage.getItem(THEME_KEY) || 'midnight';
+    let editingTaskId = null; // null = создание, id = редактирование
 
     let sheetState = { date: 'none', urgent: false, tag: 'none' };
     const TAG_EMOJIS = { 'работа': '💼', 'дом': '🏠', 'купить': '🛒', 'спорт': '🏋️', 'деньги': '💳' };
@@ -903,6 +904,7 @@
        ШТОРКИ
        ------------------------------------------------------------------------- */
     function openSheet() {
+      editingTaskId = null; // Сброс на создание новой задачи
       const sheet = document.getElementById('bottomSheet');
       const backdrop = document.getElementById('sheetBackdrop');
       const input = document.getElementById('sheetInput');
@@ -915,6 +917,40 @@
       sheet.classList.add('active');
       setTimeout(() => input.focus(), 150);
       tg?.HapticFeedback?.impactOccurred('medium');
+    }
+
+    function openEditSheet(id) {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      editingTaskId = id; // Запоминаем, какую задачу редактируем
+      const sheet = document.getElementById('bottomSheet');
+      const backdrop = document.getElementById('sheetBackdrop');
+      const input = document.getElementById('sheetInput');
+
+      // Подставляем параметры задачи в кнопки
+      sheetState.urgent = task.priority === 'high';
+      sheetState.tag = (task.tags && task.tags.length > 0) ? task.tags[0] : 'none';
+      
+      if (task.deadline) {
+        const d = new Date(task.deadline);
+        const now = new Date();
+        const tomorrow = new Date();
+        tomorrow.setDate(now.getDate() + 1);
+        if (d.toDateString() === now.toDateString()) sheetState.date = 'today';
+        else if (d.toDateString() === tomorrow.toDateString()) sheetState.date = 'tomorrow';
+        else sheetState.date = 'none';
+      } else {
+        sheetState.date = 'none';
+      }
+
+      updateSheetPills();
+      input.value = task.title;
+
+      backdrop.classList.add('active');
+      sheet.classList.add('active');
+      setTimeout(() => input.focus(), 150);
+      tg?.HapticFeedback?.impactOccurred('light');
     }
 
     function openSettings() {
@@ -956,7 +992,7 @@
       }
     }
 
-    function submitSheet() {
+   function submitSheet() {
       const input = document.getElementById('sheetInput');
       const val = input.value;
       if (!val || !val.trim()) {
@@ -964,9 +1000,22 @@
         return;
       }
 
-      const newTask = parseTask(val, sheetState.date, sheetState.urgent, sheetState.tag);
-      if (newTask) {
-        tasks.unshift(newTask);
+      const parsed = parseTask(val, sheetState.date, sheetState.urgent, sheetState.tag);
+      if (parsed) {
+        if (editingTaskId) {
+          // Если редактировали — обновляем существующую задачу
+          const idx = tasks.findIndex(t => t.id === editingTaskId);
+          if (idx !== -1) {
+            tasks[idx].title = parsed.title;
+            tasks[idx].deadline = parsed.deadline;
+            tasks[idx].priority = parsed.priority;
+            tasks[idx].tags = parsed.tags;
+          }
+          editingTaskId = null;
+        } else {
+          // Если создавали с нуля — добавляем вперед
+          tasks.unshift(parsed);
+        }
         saveTasks();
         render();
         tg?.HapticFeedback?.notificationOccurred('success');
@@ -974,7 +1023,6 @@
 
       closeAllSheets();
     }
-
     function formatMetaDate(isoString) {
       if (!isoString) return null;
       const d = new Date(isoString);
@@ -1133,6 +1181,8 @@
 
         const content = document.createElement('div');
         content.className = 'task-content';
+        content.style.cursor = 'pointer';
+        content.onclick = () => openEditSheet(task.id);
 
         const titleEl = document.createElement('div');
         titleEl.className = 'task-title';
