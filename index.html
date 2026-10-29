@@ -1215,7 +1215,7 @@
               currentDiffX = diffX;
             }
 
-            row.style.transform = `translateX(${currentDiffX}px)`;
+            row.style.transform = `translate3d(${currentDiffX}px, 0, 0)`;
 
             // Плавное нарастание цвета подложки
             const progress = Math.min(1, Math.abs(currentDiffX) / 70);
@@ -1242,7 +1242,8 @@
 
         row.addEventListener('touchend', () => {
           // Мягкий возврат пружиной
-          row.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1)';
+          row.style.transition = 'transform 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.15)';
+row.style.transform = 'translate3d(0, 0, 0)';
           row.style.transform = 'translateX(0px)';
 
           // Фон гаснет плавно ТОЛЬКО после отлета карточки, а не обрывается сразу
