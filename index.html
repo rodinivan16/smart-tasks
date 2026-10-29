@@ -291,10 +291,40 @@
       }
     }
 
-    .task-card:active {
-      transform: scale(0.98);
+    .task-card-wrapper {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--card-radius);
     }
 
+    .swipe-bg {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      font-weight: 700;
+      font-size: 14px;
+      color: #ffffff;
+      border-radius: var(--card-radius);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .swipe-bg.right {
+      justify-content: flex-start;
+      background: #34c759;
+    }
+
+    .swipe-bg.left {
+      justify-content: flex-end;
+      background: #ff3b30;
+    }
+
+    .task-card {
+      touch-action: pan-y;
+      will-change: transform;
+    }
     .task-card.completed {
       opacity: 0.55;
     }
@@ -537,7 +567,11 @@
         console.error('Ошибка в парсере:', err);
       }
 
-      const cleanedTitle = text.replace(/\s+/g, ' ').trim();
+      let cleanedTitle = text.replace(/\s+/g, ' ').trim();
+      // Делаем первую букву заглавной
+      if (cleanedTitle.length > 0) {
+        cleanedTitle = cleanedTitle.charAt(0).toUpperCase() + cleanedTitle.slice(1);
+      }
 
       return {
         id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
@@ -771,9 +805,62 @@
       }
 
       filtered.forEach(task => {
+        // Обертка для подложки свайпа
+        const wrapper = document.createElement('div');
+        wrapper.className = 'task-card-wrapper';
+
+        const swipeBgRight = document.createElement('div');
+        swipeBgRight.className = 'swipe-bg right';
+        swipeBgRight.textContent = '✓ Готово';
+
+        const swipeBgLeft = document.createElement('div');
+        swipeBgLeft.className = 'swipe-bg left';
+        swipeBgLeft.textContent = 'Удалить ✕';
+
         const card = document.createElement('div');
         card.className = `task-card ${task.completed ? 'completed' : ''}`;
 
+        // Логика тач-свайпа
+        let startX = 0;
+        let currentX = 0;
+
+        card.addEventListener('touchstart', (e) => {
+          startX = e.touches[0].clientX;
+          card.style.transition = 'none';
+        }, { passive: true });
+
+        card.addEventListener('touchmove', (e) => {
+          currentX = e.touches[0].clientX - startX;
+          // Ограничиваем ход свайпа
+          if (Math.abs(currentX) < 130) {
+            card.style.transform = `translateX(${currentX}px)`;
+            if (currentX > 20) {
+              swipeBgRight.style.opacity = '1';
+              swipeBgLeft.style.opacity = '0';
+            } else if (currentX < -20) {
+              swipeBgLeft.style.opacity = '1';
+              swipeBgRight.style.opacity = '0';
+            }
+          }
+        }, { passive: true });
+
+        card.addEventListener('touchend', () => {
+          card.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+          card.style.transform = 'translateX(0px)';
+          swipeBgRight.style.opacity = '0';
+          swipeBgLeft.style.opacity = '0';
+
+          // Порог срабатывания свайпа: 75 пикселей
+          if (currentX > 75) {
+            toggleTask(task.id);
+          } else if (currentX < -75) {
+            deleteTask(task.id);
+          }
+          currentX = 0;
+        });
+
+        wrapper.appendChild(swipeBgRight);
+        wrapper.appendChild(swipeBgLeft);
         // Чекбокс
         const checkContainer = document.createElement('div');
         checkContainer.className = 'checkbox-container';
@@ -842,7 +929,8 @@
         card.appendChild(body);
         card.appendChild(btnDelete);
 
-        listEl.appendChild(card);
+      wrapper.appendChild(card);
+        listEl.appendChild(wrapper);
       });
     }
 
