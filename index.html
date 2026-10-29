@@ -280,10 +280,10 @@
       background: #ff453a;
     }
 
-    /* Сам непрозрачный овал с задачей (физическая плашка) */
+   /* 100% непрозрачный овал: красный и зеленый свет сквозь него не проходят */
     .task-row {
       position: relative;
-      background: var(--card-bg); /* ПЛОТНЫЙ НЕПРОЗРАЧНЫЙ ФОН: текст никогда не просвечивает */
+      background: #151a26;
       border: 1px solid var(--separator);
       border-radius: 16px;
       display: flex;
@@ -293,8 +293,12 @@
       z-index: 2;
       touch-action: pan-y;
       will-change: transform;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
     }
+
+    body[data-theme="oled"] .task-row { background: #121214; }
+    body[data-theme="aurora"] .task-row { background: #1a1230; }
+    body[data-theme="warm"] .task-row { background: #ffffff; }
     .checkbox-touch {
       width: 24px;
       height: 24px;
@@ -1122,11 +1126,11 @@
 
         const bgRight = document.createElement('div');
         bgRight.className = 'swipe-reveal-bg right';
-        bgRight.textContent = '✓ Готово';
+        bgRight.innerHTML = '<span style="font-size: 24px; font-weight: 800; line-height: 1;">✓</span>';
 
         const bgLeft = document.createElement('div');
         bgLeft.className = 'swipe-reveal-bg left';
-        bgLeft.textContent = 'Удалить ✕';
+        bgLeft.innerHTML = '<span style="font-size: 22px; font-weight: 800; line-height: 1;">✕</span>';
 
         const row = document.createElement('div');
         row.className = `task-row ${task.completed ? 'completed' : ''}`;
