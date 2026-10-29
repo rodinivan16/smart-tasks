@@ -641,6 +641,48 @@
       font-weight: 600;
       text-align: center;
     }
+  /* Голосовой ввод в шторке */
+    .sheet-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .sheet-input-row .sheet-input {
+      margin-bottom: 0;
+    }
+
+    .btn-voice {
+      background: var(--card-bg);
+      border: 1px solid var(--separator);
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .btn-voice:active {
+      transform: scale(0.92);
+    }
+
+    .btn-voice.recording {
+      background: var(--danger);
+      border-color: var(--danger);
+      animation: pulseRecord 1.2s infinite;
+    }
+
+    @keyframes pulseRecord {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.5); }
+      70% { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(255, 69, 58, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 69, 58, 0); }
+    }
   </style>
 </head>
 <body data-theme="midnight">
@@ -679,7 +721,10 @@
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
   <div class="bottom-sheet" id="bottomSheet">
     <div class="sheet-grabber"></div>
-    <input type="text" id="sheetInput" class="sheet-input" placeholder="Что сделать?" autocomplete="off">
+    <div class="sheet-input-row">
+      <input type="text" id="sheetInput" class="sheet-input" placeholder="Что сделать?" autocomplete="off">
+      <button class="btn-voice" id="btnVoice" type="button" aria-label="Голосовой ввод">🎙️</button>
+    </div>
     
     <div class="sheet-options-row">
       <div class="option-pill" id="pillDate">📅 Срок</div>
@@ -1317,6 +1362,54 @@
         });
       });
 
+      // Голосовой ввод (Web Speech API)
+      const btnVoice = document.getElementById('btnVoice');
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'ru-RU';
+        recognition.interimResults = false;
+        let isRecording = false;
+
+        btnVoice.addEventListener('click', () => {
+          if (isRecording) {
+            recognition.stop();
+          } else {
+            try {
+              recognition.start();
+              tg?.HapticFeedback?.impactOccurred('medium');
+            } catch (e) {
+              console.warn(e);
+            }
+          }
+        });
+
+        recognition.onstart = () => {
+          isRecording = true;
+          btnVoice.classList.add('recording');
+        };
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          const input = document.getElementById('sheetInput');
+          input.value = input.value ? `${input.value} ${transcript}` : transcript;
+          tg?.HapticFeedback?.notificationOccurred('success');
+        };
+
+        recognition.onerror = () => {
+          isRecording = false;
+          btnVoice.classList.remove('recording');
+          tg?.HapticFeedback?.notificationOccurred('error');
+        };
+
+        recognition.onend = () => {
+          isRecording = false;
+          btnVoice.classList.remove('recording');
+        };
+      } else {
+        btnVoice.style.display = 'none'; // Скрываем, если браузер не поддерживает
+      }
       // Чипсы в шторке задачи
       document.getElementById('pillDate').addEventListener('click', () => {
         if (sheetState.date === 'none') sheetState.date = 'today';
