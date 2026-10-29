@@ -8,31 +8,42 @@
   <!-- Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <!-- Chrono-node для парсинга дат на русском языке -->
+  <!-- Chrono-node для парсинга дат на русском -->
   <script src="https://cdn.jsdelivr.net/npm/chrono-node@2.7.7/dist/bundle.min.js"></script>
+
+  <!-- Canvas Confetti для визуальной награды -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
   <style>
     /* -------------------------------------------------------------------------
-       CSS ПЕРЕМЕННЫЕ И ТЕМАТИЗАЦИЯ (iOS Style + Telegram Theme Params)
+       СИСТЕМНЫЕ ПЕРЕМЕННЫЕ И ТЕМА iOS / TELEGRAM
        ------------------------------------------------------------------------- */
     :root {
-      --bg-color: var(--tg-theme-bg-color, #f2f2f7);
-      --secondary-bg-color: var(--tg-theme-secondary-bg-color, #ffffff);
-      --text-color: var(--tg-theme-text-color, #000000);
-      --hint-color: var(--tg-theme-hint-color, #8e8e93);
-      --link-color: var(--tg-theme-link-color, #007aff);
-      --button-color: var(--tg-theme-button-color, #007aff);
-      --button-text-color: var(--tg-theme-button-text-color, #ffffff);
-      --destructive-color: var(--tg-theme-destructive-text-color, #ff3b30);
-      
-      --danger-bg: rgba(255, 59, 48, 0.12);
-      --warning-bg: rgba(255, 149, 0, 0.12);
-      --accent-badge: #ff9500;
-      --card-radius: 14px;
-      --border-color: rgba(60, 60, 67, 0.1);
+      --tg-bg: var(--tg-theme-bg-color, #f2f2f7);
+      --tg-sec-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+      --tg-text: var(--tg-theme-text-color, #000000);
+      --tg-hint: var(--tg-theme-hint-color, #8e8e93);
+      --tg-link: var(--tg-theme-link-color, #007aff);
+      --tg-btn: var(--tg-theme-button-color, #007aff);
+      --tg-btn-text: var(--tg-theme-button-text-color, #ffffff);
+      --tg-danger: var(--tg-theme-destructive-text-color, #ff3b30);
+
+      /* Glassmorphism и глубина */
+      --glass-bg: rgba(255, 255, 255, 0.72);
+      --glass-border: rgba(255, 255, 255, 0.45);
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.06);
+      --card-radius: 18px;
     }
 
-    /* Сброс стилей для мобильного UX */
+    /* Поддержка темной темы Telegram */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --glass-bg: rgba(30, 30, 30, 0.75);
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+      }
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -42,40 +53,99 @@
       user-select: none;
     }
 
-    input, textarea {
+    input {
       user-select: text;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      background-color: var(--tg-bg);
+      color: var(--tg-text);
       padding: 12px 16px;
-      padding-top: max(12px, env(safe-area-inset-top));
-      padding-bottom: max(32px, env(safe-area-inset-bottom));
+      padding-top: max(16px, env(safe-area-inset-top));
+      padding-bottom: max(40px, env(safe-area-inset-bottom));
       min-height: 100vh;
       touch-action: manipulation;
     }
 
     /* -------------------------------------------------------------------------
-       ФОРМА ВВОДА
+       ШАПКА С ПРОГРЕССОМ ДНЯ
+       ------------------------------------------------------------------------- */
+    .header-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
+      border-radius: var(--card-radius);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    .today-date {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--tg-hint);
+    }
+
+    .progress-stats {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--tg-link);
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background: rgba(142, 142, 147, 0.18);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--tg-link), #34c759);
+      border-radius: 999px;
+      transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* -------------------------------------------------------------------------
+       СТЕКЛЯННЫЙ ВВОД ЗАДАЧИ
        ------------------------------------------------------------------------- */
     .input-wrapper {
       position: sticky;
-      top: 0;
+      top: max(8px, env(safe-area-inset-top));
       z-index: 100;
-      background-color: var(--bg-color);
-      padding-bottom: 10px;
+      margin-bottom: 14px;
     }
 
-    .input-container {
+    .glass-input-container {
       display: flex;
-      gap: 8px;
-      background: var(--secondary-bg-color);
-      padding: 6px 6px 6px 14px;
+      gap: 10px;
+      align-items: center;
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shadow);
       border-radius: var(--card-radius);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-      border: 1px solid var(--border-color);
+      padding: 7px 8px 7px 16px;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-input-container:focus-within {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.12);
     }
 
     .task-input {
@@ -84,77 +154,78 @@
       outline: none;
       font-size: 16px;
       background: transparent;
-      color: var(--text-color);
+      color: var(--tg-text);
+      font-weight: 400;
     }
 
     .task-input::placeholder {
-      color: var(--hint-color);
+      color: var(--tg-hint);
       font-size: 15px;
     }
 
     .btn-add {
-      background: var(--button-color);
-      color: var(--button-text-color);
+      background: var(--tg-btn);
+      color: var(--tg-btn-text);
       border: none;
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: 20px;
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      font-weight: 500;
+      font-size: 22px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       flex-shrink: 0;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
     }
 
     .btn-add:active {
-      transform: scale(0.96);
+      transform: scale(0.92);
+      opacity: 0.9;
     }
 
     /* -------------------------------------------------------------------------
-       ТАБЫ И ТЕГИ (ФИЛЬТРЫ)
+       ФИЛЬТРЫ И ЧИПСЫ ТЕГОВ
        ------------------------------------------------------------------------- */
-    .filters-section {
-      margin-top: 6px;
-      margin-bottom: 12px;
+    .controls-row {
       display: flex;
       flex-direction: column;
       gap: 10px;
+      margin-bottom: 14px;
     }
 
     .tab-bar {
       display: flex;
-      background: var(--secondary-bg-color);
+      background: rgba(142, 142, 147, 0.14);
       padding: 3px;
-      border-radius: 10px;
-      border: 1px solid var(--border-color);
+      border-radius: 12px;
     }
 
     .tab-item {
       flex: 1;
       text-align: center;
-      padding: 8px 0;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--hint-color);
-      border-radius: 8px;
+      padding: 7px 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--tg-hint);
+      border-radius: 9px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .tab-item.active {
-      background: var(--bg-color);
-      color: var(--text-color);
-      font-weight: 600;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      background: var(--tg-sec-bg);
+      color: var(--tg-text);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     .tags-scroll {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       overflow-x: auto;
-      padding-bottom: 2px;
+      padding-bottom: 4px;
       scrollbar-width: none;
       -webkit-overflow-scrolling: touch;
     }
@@ -164,25 +235,28 @@
     }
 
     .tag-chip {
-      background: var(--secondary-bg-color);
-      color: var(--hint-color);
-      padding: 6px 12px;
-      border-radius: 16px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      color: var(--tg-hint);
+      padding: 6px 14px;
+      border-radius: 999px;
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
       white-space: nowrap;
-      border: 1px solid var(--border-color);
       cursor: pointer;
+      transition: all 0.2s ease;
     }
 
     .tag-chip.active {
-      background: var(--button-color);
-      color: var(--button-text-color);
-      border-color: var(--button-color);
+      background: var(--tg-link);
+      color: #ffffff;
+      border-color: var(--tg-link);
+      box-shadow: 0 3px 10px rgba(0, 122, 255, 0.3);
     }
 
     /* -------------------------------------------------------------------------
-       СПИСОК ЗАДАЧ
+       КАРТОЧКА ЗАДАЧИ
        ------------------------------------------------------------------------- */
     .tasks-list {
       display: flex;
@@ -191,19 +265,34 @@
     }
 
     .task-card {
-      background: var(--secondary-bg-color);
+      position: relative;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid var(--glass-border);
       border-radius: var(--card-radius);
-      padding: 12px 14px;
+      padding: 14px 14px;
       display: flex;
       align-items: flex-start;
-      gap: 12px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
-      border: 1px solid var(--border-color);
-      transition: transform 0.15s ease, opacity 0.2s ease;
+      gap: 14px;
+      box-shadow: var(--glass-shadow);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+      animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
     }
 
     .task-card:active {
-      transform: scale(0.99);
+      transform: scale(0.98);
     }
 
     .task-card.completed {
@@ -212,10 +301,10 @@
 
     .task-card.completed .task-title {
       text-decoration: line-through;
-      color: var(--hint-color);
+      color: var(--tg-hint);
     }
 
-    /* Нативный круглый чекбокс 44px touch target */
+    /* Круглый нативный чекбокс Apple */
     .checkbox-container {
       width: 44px;
       height: 44px;
@@ -228,27 +317,30 @@
     }
 
     .custom-checkbox {
-      width: 22px;
-      height: 22px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
-      border: 2px solid var(--hint-color);
+      border: 2px solid rgba(142, 142, 147, 0.4);
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      background: transparent;
     }
 
     .task-card.completed .custom-checkbox {
-      background: var(--link-color);
-      border-color: var(--link-color);
+      background: #34c759;
+      border-color: #34c759;
+      transform: scale(1.08);
+      box-shadow: 0 3px 8px rgba(52, 199, 89, 0.4);
     }
 
     .custom-checkbox::after {
       content: '';
       width: 6px;
-      height: 10px;
+      height: 11px;
       border: solid white;
-      border-width: 0 2px 2px 0;
+      border-width: 0 2.2px 2.2px 0;
       transform: rotate(45deg) translate(-1px, -1px);
       display: none;
     }
@@ -260,13 +352,16 @@
     .task-body {
       flex: 1;
       min-width: 0;
+      padding-top: 1px;
     }
 
     .task-title {
       font-size: 16px;
       line-height: 1.35;
-      color: var(--text-color);
+      font-weight: 500;
+      color: var(--tg-text);
       word-break: break-word;
+      transition: color 0.2s ease;
     }
 
     .task-meta {
@@ -274,41 +369,40 @@
       flex-wrap: wrap;
       align-items: center;
       gap: 6px;
-      margin-top: 6px;
+      margin-top: 8px;
     }
 
     .badge {
       font-size: 11px;
-      padding: 3px 7px;
-      border-radius: 6px;
+      padding: 4px 8px;
+      border-radius: 8px;
       font-weight: 600;
       letter-spacing: -0.2px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .badge-priority {
-      background: var(--danger-bg);
-      color: var(--destructive-color);
+      background: rgba(255, 59, 48, 0.14);
+      color: #ff3b30;
     }
 
     .badge-date {
-      background: var(--bg-color);
-      color: var(--hint-color);
-      display: flex;
-      align-items: center;
-      gap: 3px;
+      background: rgba(142, 142, 147, 0.14);
+      color: var(--tg-hint);
     }
 
     .badge-date.overdue {
-      color: var(--destructive-color);
-      background: var(--danger-bg);
+      background: rgba(255, 59, 48, 0.14);
+      color: #ff3b30;
     }
 
     .badge-tag {
-      background: var(--bg-color);
-      color: var(--link-color);
+      background: rgba(0, 122, 255, 0.12);
+      color: var(--tg-link);
     }
 
-    /* Кнопка удаления (Touch-target 44px) */
     .btn-delete {
       width: 44px;
       height: 44px;
@@ -318,39 +412,53 @@
       justify-content: center;
       background: transparent;
       border: none;
-      color: var(--hint-color);
+      color: var(--tg-hint);
       cursor: pointer;
       flex-shrink: 0;
+      transition: transform 0.15s ease, color 0.15s ease;
     }
 
     .btn-delete:active {
-      color: var(--destructive-color);
+      transform: scale(0.9);
+      color: var(--tg-danger);
     }
 
     .empty-state {
       text-align: center;
       padding: 60px 20px;
-      color: var(--hint-color);
+      color: var(--tg-hint);
       font-size: 15px;
+      font-weight: 500;
     }
   </style>
 </head>
 <body>
 
-  <!-- Поле ввода задачи -->
+  <!-- Шапка с прогрессом дня -->
+  <div class="header-card">
+    <div class="header-top">
+      <span class="today-date" id="headerDate">Сегодня</span>
+      <span class="progress-stats" id="progressStats">0 из 0 • 0%</span>
+    </div>
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+  </div>
+
+  <!-- Поле ввода с эффектом матового стекла -->
   <div class="input-wrapper">
-    <div class="input-container">
+    <div class="glass-input-container">
       <input type="text" id="taskInput" class="task-input" 
              placeholder="Купить молоко завтра в 18:00 #дом срочно" 
-             autocomplete="off" autocorrect="on">
+             autocomplete="off">
       <button class="btn-add" id="btnAdd" aria-label="Добавить">+</button>
     </div>
   </div>
 
-  <!-- Фильтры: табы статуса и чипсы тегов -->
-  <div class="filters-section">
+  <!-- Управление и фильтры -->
+  <div class="controls-row">
     <div class="tab-bar">
-      <div class="tab-item active" data-tab="active">Активные</div>
+      <div class="tab-item active" data-tab="active">В работе</div>
       <div class="tab-item" data-tab="done">Готово</div>
       <div class="tab-item" data-tab="all">Все</div>
     </div>
@@ -362,23 +470,35 @@
 
   <script>
     /* -------------------------------------------------------------------------
-       СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+       СОСТОЯНИЕ И КОНФИГУРАЦИЯ
        ------------------------------------------------------------------------- */
-    const STORAGE_KEY = 'smart_tasks_data_v1';
+    const STORAGE_KEY = 'smart_tasks_data_v2';
     let tasks = [];
-    let currentTab = 'active'; // 'active' | 'done' | 'all'
-    let currentTag = null;     // null = все теги
+    let currentTab = 'active';
+    let currentTag = null;
 
-    // Инициализация WebApp SDK
     const tg = window.Telegram?.WebApp;
 
+    // Словарь авто-эмодзи для тегов
+    const TAG_EMOJIS = {
+      'работа': '💼', 'work': '💼', 'проект': '📊',
+      'дом': '🏠', 'быт': '🧹', 'семья': '👨‍👩‍👧',
+      'покупки': '🛒', 'купить': '🛍️', 'магазин': '🛒',
+      'спорт': '🏋️', 'зал': '💪', 'треня': '🏃',
+      'деньги': '💳', 'финансы': '💰', 'оплата': '🧾',
+      'учеба': '📚', 'книга': '📖', 'курсы': '🎓',
+      'здоровье': '💊', 'врач': '🩺', 'аптека': '🏥',
+      'звонок': '📞', 'встреча': '🤝', 'созвон': '📱'
+    };
+
+    function getTagDisplay(tag) {
+      const emoji = TAG_EMOJIS[tag.toLowerCase()] || '🏷️';
+      return `${emoji} #${tag}`;
+    }
+
     /* -------------------------------------------------------------------------
-       ПАРСИНГ ЗАДАЧИ (parseTask)
+       ПАРСИНГ ТЕКСТА ЗАДАЧИ
        ------------------------------------------------------------------------- */
-    /**
-     * Преобразует свободный текст в объект задачи:
-     * парсит дату/время через Chrono, теги через #, приоритет по ключам.
-     */
     function parseTask(rawText) {
       if (!rawText || !rawText.trim()) return null;
 
@@ -388,14 +508,14 @@
       let deadline = null;
 
       try {
-        // 1. Приоритет: слова "срочно", "важно", "!!!"
+        // Приоритет
         const priorityRegex = /(?:^|\s)(срочно|важно|!!!)(?:\s|$)/gi;
         if (priorityRegex.test(text)) {
           priority = 'high';
           text = text.replace(priorityRegex, ' ').trim();
         }
 
-        // 2. Теги: слова, начинающиеся с #
+        // Теги
         const tagRegex = /(?:^|\s)#([a-zA-Zа-яА-ЯёЁ0-9_-]+)/g;
         let tagMatch;
         while ((tagMatch = tagRegex.exec(text)) !== null) {
@@ -403,28 +523,25 @@
         }
         text = text.replace(tagRegex, ' ').trim();
 
-        // 3. Дата и время: используем chrono-node с русской локалью
+        // Дата/время через Chrono
         const chronoParser = window.chrono?.ru || window.chrono;
         if (chronoParser) {
           const parsedResults = chronoParser.parse(text, new Date(), { forwardDate: true });
           if (parsedResults && parsedResults.length > 0) {
             const firstResult = parsedResults[0];
             deadline = firstResult.date().toISOString();
-            // Вырезаем спарсенное выражение даты/времени из текста задачи
             text = text.replace(firstResult.text, ' ').trim();
           }
         }
       } catch (err) {
-        console.error('Ошибка в parseTask, создаём базовую задачу:', err);
+        console.error('Ошибка в парсере:', err);
       }
 
-      // Нормализуем пробелы
       const cleanedTitle = text.replace(/\s+/g, ' ').trim();
 
       return {
         id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-        title: cleanedTitle || rawText.trim(), // fallback на сырой текст если всё спарсилось
-        rawText: rawText.trim(),
+        title: cleanedTitle || rawText.trim(),
         deadline: deadline,
         priority: priority,
         tags: tags,
@@ -434,25 +551,24 @@
     }
 
     /* -------------------------------------------------------------------------
-       РАБОТА С ХРАНИЛИЩЕМ (CloudStorage + Fallback to LocalStorage)
+       ХРАНИЛИЩЕ (CloudStorage + Fallback)
        ------------------------------------------------------------------------- */
     const isCloudSupported = Boolean(
       tg?.isVersionAtLeast && tg.isVersionAtLeast('6.9') && tg.CloudStorage
     );
 
-    function saveToCloud() {
+    function saveTasks() {
       const dataStr = JSON.stringify(tasks);
-      // Всегда дублируем локально для мгновенного offline-доступа
       localStorage.setItem(STORAGE_KEY, dataStr);
 
       if (isCloudSupported) {
-        tg.CloudStorage.setItem(STORAGE_KEY, dataStr, (err, stored) => {
-          if (err) console.warn('Ошибка записи в CloudStorage:', err);
+        tg.CloudStorage.setItem(STORAGE_KEY, dataStr, (err) => {
+          if (err) console.warn('Ошибка CloudStorage:', err);
         });
       }
     }
 
-    function loadFromCloud() {
+    function loadTasks() {
       return new Promise((resolve) => {
         if (isCloudSupported) {
           tg.CloudStorage.getItem(STORAGE_KEY, (err, value) => {
@@ -460,20 +576,17 @@
               try {
                 resolve(JSON.parse(value));
                 return;
-              } catch (e) {
-                console.error('Ошибка парсинга из CloudStorage:', e);
-              }
+              } catch (e) {}
             }
-            // Fallback на LocalStorage при ошибке или пустоте
-            loadFromLocalStorage(resolve);
+            loadLocal(resolve);
           });
         } else {
-          loadFromLocalStorage(resolve);
+          loadLocal(resolve);
         }
       });
     }
 
-    function loadFromLocalStorage(resolve) {
+    function loadLocal(resolve) {
       try {
         const local = localStorage.getItem(STORAGE_KEY);
         resolve(local ? JSON.parse(local) : []);
@@ -483,8 +596,29 @@
     }
 
     /* -------------------------------------------------------------------------
-       ОПЕРАЦИИ С ЗАДАЧАМИ
+       ДЕЙСТВИЯ И ДОФАМИН (Confetti + Haptics)
        ------------------------------------------------------------------------- */
+    function triggerConfetti(epic = false) {
+      if (typeof confetti !== 'function') return;
+
+      if (epic) {
+        // Двойной салют при полном закрытии дня
+        confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
+        setTimeout(() => {
+          confetti({ particleCount: 50, angle: 60, spread: 55, origin: { x: 0 } });
+          confetti({ particleCount: 50, angle: 120, spread: 55, origin: { x: 1 } });
+        }, 200);
+      } else {
+        // Легкий взрыв при одиночной задаче
+        confetti({
+          particleCount: 35,
+          spread: 60,
+          origin: { y: 0.75 },
+          colors: ['#007aff', '#34c759', '#ff9500', '#ff2d55']
+        });
+      }
+    }
+
     function addTask() {
       const input = document.getElementById('taskInput');
       const val = input.value;
@@ -494,11 +628,11 @@
       if (!newTask) return;
 
       tasks.unshift(newTask);
-      saveToCloud();
-      renderTasks();
+      saveTasks();
+      render();
 
       input.value = '';
-      hapticImpact('light');
+      tg?.HapticFeedback?.impactOccurred('light');
     }
 
     function toggleTask(id) {
@@ -506,26 +640,50 @@
       if (!task) return;
 
       task.completed = !task.completed;
-      saveToCloud();
-      renderTasks();
+      saveTasks();
+      render();
 
       if (task.completed) {
-        hapticNotification('success');
+        tg?.HapticFeedback?.notificationOccurred('success');
+        
+        // Проверяем, закрыты ли вообще все задачи
+        const activeCount = tasks.filter(t => !t.completed).length;
+        if (activeCount === 0 && tasks.length > 0) {
+          triggerConfetti(true); // Супер-салют
+        } else {
+          triggerConfetti(false); // Обычный салют
+        }
       } else {
-        hapticImpact('light');
+        tg?.HapticFeedback?.impactOccurred('light');
       }
     }
 
     function deleteTask(id) {
       tasks = tasks.filter(t => t.id !== id);
-      saveToCloud();
-      renderTasks();
-      hapticImpact('medium');
+      saveTasks();
+      render();
+      tg?.HapticFeedback?.impactOccurred('medium');
     }
 
     /* -------------------------------------------------------------------------
-       ФОРМАТИРОВАНИЕ И ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+       РЕНДЕРИНГ ИНТЕРФЕЙСА
        ------------------------------------------------------------------------- */
+    function updateHeaderStats() {
+      // Обновляем текущую дату
+      const now = new Date();
+      const options = { weekday: 'long', month: 'long', day: 'numeric' };
+      const dateStr = now.toLocaleDateString('ru-RU', options);
+      document.getElementById('headerDate').textContent = dateStr;
+
+      // Обновляем прогресс-бар
+      const total = tasks.length;
+      const completed = tasks.filter(t => t.completed).length;
+      const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+      document.getElementById('progressStats').textContent = `${completed} из ${total} • ${percent}%`;
+      document.getElementById('progressBar').style.width = `${percent}%`;
+    }
+
     function formatDeadline(isoString) {
       if (!isoString) return null;
       const date = new Date(isoString);
@@ -553,48 +711,38 @@
       return { label, isOverdue };
     }
 
-    function hapticImpact(style) {
-      tg?.HapticFeedback?.impactOccurred(style);
-    }
+    function render() {
+      updateHeaderStats();
 
-    function hapticNotification(type) {
-      tg?.HapticFeedback?.notificationOccurred(type);
-    }
-
-    /* -------------------------------------------------------------------------
-       РЕНДЕРИНГ ИНТЕРФЕЙСА (renderTasks)
-       ------------------------------------------------------------------------- */
-    function renderTasks() {
       const listEl = document.getElementById('tasksList');
       const tagsContainer = document.getElementById('tagsContainer');
 
-      // 1. Сбор всех уникальных тегов
+      // Чипсы тегов
       const allTags = new Set();
       tasks.forEach(t => t.tags?.forEach(tag => allTags.add(tag)));
 
-      // Рендер чипсов фильтра тегов
       tagsContainer.innerHTML = '';
       if (allTags.size > 0) {
         const allChip = document.createElement('div');
         allChip.className = `tag-chip ${currentTag === null ? 'active' : ''}`;
-        allChip.textContent = '#все';
-        allChip.onclick = () => { currentTag = null; renderTasks(); hapticImpact('light'); };
+        allChip.textContent = 'Все';
+        allChip.onclick = () => { currentTag = null; render(); tg?.HapticFeedback?.impactOccurred('light'); };
         tagsContainer.appendChild(allChip);
 
         allTags.forEach(tag => {
           const chip = document.createElement('div');
           chip.className = `tag-chip ${currentTag === tag ? 'active' : ''}`;
-          chip.textContent = `#${tag}`;
+          chip.textContent = getTagDisplay(tag);
           chip.onclick = () => {
             currentTag = currentTag === tag ? null : tag;
-            renderTasks();
-            hapticImpact('light');
+            render();
+            tg?.HapticFeedback?.impactOccurred('light');
           };
           tagsContainer.appendChild(chip);
         });
       }
 
-      // 2. Фильтрация
+      // Фильтрация
       let filtered = tasks.filter(task => {
         if (currentTab === 'active' && task.completed) return false;
         if (currentTab === 'done' && !task.completed) return false;
@@ -602,31 +750,23 @@
         return true;
       });
 
-      // 3. Сортировка:
-      // Сначала высокий приоритет -> ближайший дедлайн -> дата создания
+      // Сортировка: Срочные -> По дедлайну -> По новизне
       filtered.sort((a, b) => {
         if (a.completed !== b.completed) return a.completed ? 1 : -1;
-        
-        // Высокий приоритет первее
         if (a.priority === 'high' && b.priority !== 'high') return -1;
         if (a.priority !== 'high' && b.priority === 'high') return 1;
 
-        // По дедлайну (задачи с датой идут раньше задач без даты)
-        if (a.deadline && b.deadline) {
-          return new Date(a.deadline) - new Date(b.deadline);
-        }
+        if (a.deadline && b.deadline) return new Date(a.deadline) - new Date(b.deadline);
         if (a.deadline && !b.deadline) return -1;
         if (!a.deadline && b.deadline) return 1;
 
-        // По времени создания (новые выше)
         return new Date(b.createdAt) - new Date(a.createdAt);
       });
 
-      // 4. Отрисовка списка
       listEl.innerHTML = '';
 
       if (filtered.length === 0) {
-        listEl.innerHTML = `<div class="empty-state">Нет задач</div>`;
+        listEl.innerHTML = `<div class="empty-state">Нет задач в этом списке 🎉</div>`;
         return;
       }
 
@@ -642,7 +782,7 @@
         checkCircle.className = 'custom-checkbox';
         checkContainer.appendChild(checkCircle);
 
-        // Тело задачи
+        // Тело
         const body = document.createElement('div');
         body.className = 'task-body';
 
@@ -651,14 +791,14 @@
         title.textContent = task.title;
         body.appendChild(title);
 
-        // Метаданные (бейджи)
+        // Бейджи
         const meta = document.createElement('div');
         meta.className = 'task-meta';
 
         if (task.priority === 'high') {
           const pBadge = document.createElement('span');
           pBadge.className = 'badge badge-priority';
-          pBadge.textContent = 'Срочно';
+          pBadge.innerHTML = '⚡ Срочно';
           meta.appendChild(pBadge);
         }
 
@@ -676,21 +816,19 @@
           task.tags.forEach(t => {
             const tBadge = document.createElement('span');
             tBadge.className = 'badge badge-tag';
-            tBadge.textContent = `#${t}`;
+            tBadge.textContent = getTagDisplay(t);
             meta.appendChild(tBadge);
           });
         }
 
-        if (meta.children.length > 0) {
-          body.appendChild(meta);
-        }
+        if (meta.children.length > 0) body.appendChild(meta);
 
-        // Кнопка удаления (44x44 тач зона)
+        // Кнопка удаления
         const btnDelete = document.createElement('button');
         btnDelete.className = 'btn-delete';
         btnDelete.setAttribute('aria-label', 'Удалить');
         btnDelete.innerHTML = `
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
           </svg>
@@ -709,20 +847,15 @@
     }
 
     /* -------------------------------------------------------------------------
-       СЛУШАТЕЛИ СОБЫТИЙ И СТАРТ
+       ИНИЦИАЛИЗАЦИЯ
        ------------------------------------------------------------------------- */
     document.addEventListener('DOMContentLoaded', async () => {
-      // Инициализация Telegram Viewport
       if (tg) {
         tg.ready();
         tg.expand();
-        // Включаем подтверждение закрытия, чтобы свайп вниз случайно не закрыл окно
-        if (tg.enableClosingConfirmation) {
-          tg.enableClosingConfirmation();
-        }
+        if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
       }
 
-      // Добавление по кнопке и Enter
       document.getElementById('btnAdd').addEventListener('click', addTask);
       document.getElementById('taskInput').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -731,20 +864,18 @@
         }
       });
 
-      // Переключение табов
       document.querySelectorAll('.tab-item').forEach(tab => {
         tab.addEventListener('click', () => {
           document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
           currentTab = tab.dataset.tab;
-          renderTasks();
-          hapticImpact('light');
+          render();
+          tg?.HapticFeedback?.impactOccurred('light');
         });
       });
 
-      // Загрузка данных из CloudStorage
-      tasks = await loadFromCloud();
-      renderTasks();
+      tasks = await loadTasks();
+      render();
     });
   </script>
 </body>
