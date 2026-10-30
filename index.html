@@ -188,6 +188,95 @@
       background: var(--tint);
     }
 
+    /* Недельная лента Apple Fitness */
+    .date-strip-wrapper {
+      margin-bottom: 14px;
+    }
+
+    .date-strip {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px 2px 8px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .date-strip::-webkit-scrollbar {
+      display: none;
+    }
+
+    .date-card {
+      flex: 0 0 54px;
+      height: 70px;
+      background: var(--card-bg);
+      border: 1px solid var(--separator);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+    }
+
+    .date-card:active {
+      transform: scale(0.93);
+    }
+
+    .date-card.active {
+      background: var(--tint);
+      border-color: var(--tint);
+      box-shadow: 0 4px 14px rgba(56, 139, 253, 0.35);
+    }
+
+    .date-card .weekday {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--hint);
+    }
+
+    .date-card .daynum {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .date-card.active .weekday,
+    .date-card.active .daynum {
+      color: #ffffff;
+    }
+
+    .date-card.is-today:not(.active) {
+      border-color: var(--tint);
+    }
+
+    /* Точка-индикатор задач под датой */
+    .date-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--tint);
+      opacity: 0;
+    }
+
+    .date-card.has-tasks .date-dot {
+      opacity: 1;
+    }
+
+    .date-card.active .date-dot {
+      background: #ffffff;
+    }
+
+    /* Карточка "Все" в начале ленты */
+    .date-card.all-card {
+      flex: 0 0 50px;
+    }
     /* ФИЛЬТР ТЕГОВ */
     .tags-bar {
       display: flex;
@@ -664,6 +753,11 @@
     </div>
   </div>
 
+  <!-- Недельная лента в стиле Apple Fitness / Календаря -->
+  <div class="date-strip-wrapper">
+    <div class="date-strip" id="dateStrip"></div>
+  </div>
+  
   <div class="tags-bar" id="tagsBar"></div>
   <div id="sectionsContainer"></div>
   <div id="doneAccordionContainer"></div>
@@ -675,13 +769,11 @@
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
   <div class="bottom-sheet" id="bottomSheet">
     <div class="sheet-grabber"></div>
-    <div class="sheet-input-row">
-      <input type="text" id="sheetInput" class="sheet-input" placeholder="Что сделать?" autocomplete="off">
-      <button class="btn-voice" id="btnVoice" type="button" aria-label="Голос">🎙️</button>
-    </div>
+    <input type="text" id="sheetInput" class="sheet-input" placeholder="Что сделать?" autocomplete="off">
     
     <div class="sheet-options-row">
       <div class="option-pill" id="pillDate">📅 Срок</div>
+      <input type="date" id="nativeDateInput" style="display: none;">
       <div class="option-pill" id="pillUrgent">⚡ Срочно</div>
       <div class="option-pill" id="pillTag">🏷️ Тег</div>
     </div>
@@ -716,8 +808,7 @@
       </div>
     </div>
 
-    <div style="font-size: 12px; color: var(--hint); margin: 16px 0 8px; font-weight: 600; text-transform: uppercase;">Голосовой ввод (Groq Whisper API)</div>
-    <input type="text" id="groqKeyInput" placeholder="Вставьте ключ gsk_..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="width: 100%; background: var(--bg); border: 1px solid var(--separator); padding: 12px 14px; border-radius: 12px; color: var(--text); font-size: 14px; outline: none; margin-bottom: 20px;">
+  
 
     <div class="sheet-actions">
       <button class="btn-sheet-submit" id="btnCloseSettings">Закрыть</button>
@@ -730,6 +821,8 @@
     const THEME_KEY = 'smart_tasks_theme_v1';
     let tasks = [];
     let currentTag = null;
+    let selectedDateFilter = null; // null = показать все, 'YYYY-MM-DD' = конкретный день
+    let customPickedDate = null;   // дата, выбранная через календарь в шторке
     let isDoneExpanded = false;
     let currentTheme = localStorage.getItem(THEME_KEY) || 'midnight';
     let editingTaskId = null;
@@ -766,6 +859,10 @@
           now.setDate(now.getDate() + 1);
           now.setHours(23, 59, 59, 999);
           deadline = now.toISOString();
+        } else if (explicitDate === 'custom' && customPickedDate) {
+          const [y, m, day] = customPickedDate.split('-').map(Number);
+          const target = new Date(y, m - 1, day, 23, 59, 59, 999);
+          deadline = target.toISOString();
         }
 
         const priorityRegex = /(?:^|\s)(срочно|важно|!!!)(?:\s|$)/gi;
@@ -1014,7 +1111,11 @@
       const pDate = document.getElementById('pillDate');
       if (sheetState.date === 'today') { pDate.textContent = '📅 Сегодня'; pDate.className = 'option-pill active'; }
       else if (sheetState.date === 'tomorrow') { pDate.textContent = '📅 Завтра'; pDate.className = 'option-pill active'; }
-      else { pDate.textContent = '📅 Срок'; pDate.className = 'option-pill'; }
+      else if (sheetState.date === 'custom' && customPickedDate) {
+        const parts = customPickedDate.split('-');
+        pDate.textContent = `📅 ${parts[2]}.${parts[1]}`;
+        pDate.className = 'option-pill active';
+      } else { pDate.textContent = '📅 Срок'; pDate.className = 'option-pill'; }
 
       const pUrgent = document.getElementById('pillUrgent');
       pUrgent.className = sheetState.urgent ? 'option-pill active urgent' : 'option-pill';
@@ -1071,6 +1172,64 @@
       return { text: `${d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}, ${time}`, isOverdue };
     }
 
+    /* ГЕНЕРАЦИЯ ЛЕНТЫ ДНЕЙ (APPLE FITNESS STYLE) */
+    function renderDateStrip() {
+      const strip = document.getElementById('dateStrip');
+      if (!strip) return;
+      strip.innerHTML = '';
+
+      // Карточка "Все"
+      const allCard = document.createElement('div');
+      allCard.className = `date-card all-card ${selectedDateFilter === null ? 'active' : ''}`;
+      allCard.innerHTML = `<span class="weekday">Все</span><span class="daynum" style="font-size: 15px;">∞</span><span class="date-dot"></span>`;
+      allCard.onclick = () => {
+        selectedDateFilter = null;
+        renderDateStrip();
+        render();
+        tg?.HapticFeedback?.selectionChanged();
+      };
+      strip.appendChild(allCard);
+
+      // Генерируем 14 дней (от вчера на две недели вперед)
+      const now = new Date();
+      const weekdays = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+
+      for (let i = -1; i < 13; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateKey = `${yyyy}-${mm}-${dd}`;
+
+        const isToday = i === 0;
+        const isSelected = selectedDateFilter === dateKey;
+
+        // Проверяем, есть ли невыполненные задачи на этот день
+        const hasTasks = tasks.some(t => {
+          if (t.completed || !t.deadline) return false;
+          const tDate = new Date(t.deadline);
+          const tKey = `${tDate.getFullYear()}-${String(tDate.getMonth()+1).padStart(2,'0')}-${String(tDate.getDate()).padStart(2,'0')}`;
+          return tKey === dateKey;
+        });
+
+        const card = document.createElement('div');
+        card.className = `date-card ${isSelected ? 'active' : ''} ${isToday ? 'is-today' : ''} ${hasTasks ? 'has-tasks' : ''}`;
+        card.innerHTML = `
+          <span class="weekday">${isToday ? 'Сегодня' : weekdays[d.getDay()]}</span>
+          <span class="daynum">${d.getDate()}</span>
+          <span class="date-dot"></span>
+        `;
+
+        card.onclick = () => {
+          selectedDateFilter = isSelected ? null : dateKey;
+          renderDateStrip();
+          render();
+          tg?.HapticFeedback?.selectionChanged();
+        };
+
+        strip.appendChild(card);
+      }
+    }
     /* РЕНДЕР */
     function render() {
       const now = new Date();
@@ -1102,7 +1261,16 @@
         });
       }
 
-      const visibleActive = activeTasks.filter(t => !currentTag || t.tags?.includes(currentTag));
+      const visibleActive = activeTasks.filter(t => {
+        if (currentTag && (!t.tags || !t.tags.includes(currentTag))) return false;
+        if (selectedDateFilter) {
+          if (!t.deadline) return false;
+          const tDate = new Date(t.deadline);
+          const tKey = `${tDate.getFullYear()}-${String(tDate.getMonth()+1).padStart(2,'0')}-${String(tDate.getDate()).padStart(2,'0')}`;
+          return tKey === selectedDateFilter;
+        }
+        return true;
+      });
       const todayGroup = [];
       const upcomingGroup = [];
       const noDateGroup = [];
@@ -1185,6 +1353,7 @@
 
         if (isDoneExpanded) renderSection(accContainer, null, doneTasks, null, true);
       }
+      renderDateStrip();
       updateStreakBadge();
     }
 
@@ -1362,14 +1531,7 @@
 
       applyTheme(currentTheme);
 
-      // Ключ Groq
-      const keyInput = document.getElementById('groqKeyInput');
-      if (keyInput) {
-        keyInput.value = localStorage.getItem('groq_whisper_key') || '';
-        keyInput.addEventListener('input', () => {
-          localStorage.setItem('groq_whisper_key', keyInput.value.trim());
-        });
-      }
+      
 
       // Кнопки
       document.getElementById('fabBtn').addEventListener('click', openSheet);
@@ -1388,11 +1550,34 @@
         });
       });
 
+      const nativeInput = document.getElementById('nativeDateInput');
+
       document.getElementById('pillDate').addEventListener('click', () => {
-        if (sheetState.date === 'none') sheetState.date = 'today';
-        else if (sheetState.date === 'today') sheetState.date = 'tomorrow';
-        else sheetState.date = 'none';
+        if (sheetState.date === 'none') {
+          sheetState.date = 'today';
+          customPickedDate = null;
+        } else if (sheetState.date === 'today') {
+          sheetState.date = 'tomorrow';
+          customPickedDate = null;
+        } else if (sheetState.date === 'tomorrow') {
+          // Открываем нативный календарь iPhone
+          nativeInput.showPicker ? nativeInput.showPicker() : nativeInput.click();
+          return;
+        } else {
+          sheetState.date = 'none';
+          customPickedDate = null;
+        }
         updateSheetPills();
+        tg?.HapticFeedback?.impactOccurred('light');
+      });
+
+      nativeInput.addEventListener('change', (e) => {
+        if (e.target.value) {
+          sheetState.date = 'custom';
+          customPickedDate = e.target.value; // формат YYYY-MM-DD
+          updateSheetPills();
+          tg?.HapticFeedback?.notificationOccurred('success');
+        }
       });
 
       document.getElementById('pillUrgent').addEventListener('click', () => {
@@ -1407,87 +1592,7 @@
         updateSheetPills();
       });
 
-      // Запись звука и Whisper
-      let mediaRecorder = null;
-      let audioChunks = [];
-      let isRecording = false;
-
-      const btnVoice = document.getElementById('btnVoice');
-      if (btnVoice) {
-        btnVoice.addEventListener('click', async () => {
-          const apiKey = localStorage.getItem('groq_whisper_key') || '';
-          if (!apiKey) {
-            alert('Сначала укажите ключ Groq в Настройках (шестеренка ⚙️)');
-            openSettings();
-            return;
-          }
-
-          if (isRecording) {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-            return;
-          }
-
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            let mimeType = 'audio/webm';
-            if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
-            else if (MediaRecorder.isTypeSupported('audio/webm')) mimeType = 'audio/webm';
-
-            mediaRecorder = new MediaRecorder(stream, { mimeType });
-            audioChunks = [];
-
-            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
-
-            mediaRecorder.onstart = () => {
-              isRecording = true;
-              btnVoice.classList.add('recording');
-              btnVoice.textContent = '⏹️';
-              tg?.HapticFeedback?.impactOccurred('medium');
-            };
-
-            mediaRecorder.onstop = async () => {
-              isRecording = false;
-              btnVoice.classList.remove('recording');
-              btnVoice.textContent = '⏳';
-              stream.getTracks().forEach(track => track.stop());
-
-              if (audioChunks.length === 0) { btnVoice.textContent = '🎙️'; return; }
-
-              const audioBlob = new Blob(audioChunks, { type: mimeType });
-              try {
-                const ext = mimeType.includes('mp4') ? 'm4a' : 'webm';
-                const formData = new FormData();
-                formData.append('file', audioBlob, `audio.${ext}`);
-                formData.append('model', 'whisper-large-v3-turbo');
-                formData.append('language', 'ru');
-
-                const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-                  method: 'POST',
-                  headers: { 'Authorization': `Bearer ${apiKey}` },
-                  body: formData
-                });
-
-                if (!response.ok) throw new Error('API error');
-                const data = await response.json();
-                if (data.text) {
-                  const sInput = document.getElementById('sheetInput');
-                  sInput.value = sInput.value ? `${sInput.value} ${data.text.trim()}` : data.text.trim();
-                  tg?.HapticFeedback?.notificationOccurred('success');
-                }
-              } catch (err) {
-                alert('Ошибка распознавания. Проверьте ключ в настройках.');
-              } finally {
-                btnVoice.textContent = '🎙️';
-              }
-            };
-
-            mediaRecorder.start();
-          } catch (err) {
-            alert('Разрешите доступ к микрофону в Telegram.');
-          }
-        });
-      }
-
+     
       tasks = await loadTasks();
       render();
     });
